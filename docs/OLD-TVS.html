@@ -142,9 +142,10 @@ cycle were verified. The stored preference has <code>mAlways=true</code>; the st
 <p>The final watchdog was disarmed only after those checks passed. It is temporary handover
 protection, not a permanent boot-time recovery service. No firmware, root access, system
 partition changes, uninstallation, or general debloat list was involved.</p>
-<p>A cold reboot/power-loss start was not tested: the temporary watchdog would not survive a
-reboot, and this TV's ADB can require local debugging to be toggled afterward. Recovery after
-confirmation still requires working ADB; there is no verified physical-remote rescue path.
+<p>A subsequent guarded system restart at 17:36 on 2026-10-20 preserved the new default HOME
+and foreground launcher. An unplug/replug start remains untested. This TV's ADB can require
+local debugging and authorization to be renewed afterward. Recovery after confirmation still
+requires working ADB; there is no verified physical-remote rescue path.
 Do not uninstall the new launcher while the stock launcher is disabled. The Xiaomi Mi TV 2
 and Android 4.4 runtime remain unverified on physical hardware.</p>
 <h3>Launcher 2.5: hiding and restoring icons</h3>
@@ -166,4 +167,24 @@ was not disarmed while verification was incomplete. Its final outcome still need
 back from the TV. Do not count this as complete on-device hide/restore acceptance.
 The API 21 emulator could not start this time because the host had insufficient free disk
 space; earlier 2.4 emulator results do not establish 2.5 runtime compatibility.</p>
+<h3>Compact home spacing and Back navigation (2026-10-20)</h3>
+<p>The grid's top padding now has a 120dp maximum instead of consuming all spare vertical space.
+It still shrinks to the available height and never becomes negative. Three geometry regressions
+cover tall, short and overflowing grids; all 64 JVM tests, 18 Python tests, the release build
+and lint pass (lint still reports existing warnings).</p>
+<p>The spacing APK was installed at 18:04 under temporary rollback protection. After ADB
+authorization was renewed, its APK was read back and matched the local release SHA-256:
+<code>0f56aa43e9abe7a2472d322a6a21b0e2f54d73b810b436ebfa52038bc700aaef</code>.
+A fresh screenshot confirms the compact layout. The stock launcher remains disabled and
+HOME resolves to this launcher. No rollback watchdog process is running.</p>
+<p>The user confirmed that the physical remote's Home button opens this launcher. Back is not
+globally remapped: it keeps application navigation and dialogs intact, and returns to this
+HOME when the application exits. Device checks traversed Date/Time settings back through
+the Sony settings panels to this launcher. Opening Galaxy Kiwi from its launcher tile,
+pressing Back on its home page and confirming its own exit dialog also returned here.
+Applications can handle Back themselves; their exit confirmations are not bypassed, and
+these checks do not establish the behavior of every installed application.</p>
+<p>The accessibility manager reported <code>services:{}</code> during these checks. A saved
+<code>HomeKeyService</code> setting is not proof that the service is bound; neither verified return
+path depends on it. No global Back interception or additional APK installation was needed.</p>
 </main></body></html>
