@@ -5,18 +5,29 @@ import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 /** Remote-friendly settings owned by the launcher; system settings stay one row away. */
 public final class LauncherSettingsActivity extends Activity {
     private SharedPreferences choices;
+    private AppVisibility visibility;
     private final TextView[] columnChoices = new TextView[4];
     private TextView animationsChoice;
     private TextView advancedChoice;
     private TextView followThemeChoice;
+    private TextView hiddenAppsChoice;
     private int columns;
     private boolean animations;
     private boolean advancedEffects;
@@ -27,6 +38,7 @@ public final class LauncherSettingsActivity extends Activity {
         setContentView(R.layout.activity_launcher_settings);
         Fonts.apply(findViewById(android.R.id.content));
         choices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
+        visibility = new AppVisibility(choices);
         Config config = Config.load(this);
         columns = config.columns;
         animations = config.animations;
@@ -44,6 +56,8 @@ public final class LauncherSettingsActivity extends Activity {
                 refresh();
             });
         }
+        hiddenAppsChoice = findViewById(R.id.hiddenAppsChoice);
+        hiddenAppsChoice.setOnClickListener(v -> showHiddenApps());
         animationsChoice = findViewById(R.id.animationsChoice);
         animationsChoice.setOnClickListener(v -> {
             animations = !animations;
@@ -95,6 +109,7 @@ public final class LauncherSettingsActivity extends Activity {
     }
 
     private void refresh() {
+        hiddenAppsChoice.setText(getString(R.string.hidden_apps_count, visibility.hidden().size()));
         for (int i = 0; i < columnChoices.length; i++) {
             columnChoices[i].setSelected(columns == i + 4);
         }
@@ -105,6 +120,55 @@ public final class LauncherSettingsActivity extends Activity {
         advancedChoice.setEnabled(animations);
         advancedChoice.setAlpha(animations ? 1f : 0.5f);
         followThemeChoice.setSelected(!hasOnTvChoices());
+    }
+
+    private void showHiddenApps() {
+        List<String> packages = new ArrayList<>(visibility.hidden());
+        if (packages.isEmpty()) {
+            Toast.makeText(this, R.string.no_hidden_apps, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        PackageManager pm = getPackageManager();
+        Map<String, String> labels = new HashMap<>();
+        for (String pkg : packages) {
+            String label = pkg;
+            try {
+                label = Cards.cleanLabel(String.valueOf(pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0))), pkg);
+            } catch (PackageManager.NameNotFoundException ignored) {
+                // Keep uninstalled apps selectable so stale hidden records can also be removed.
+            }
+            labels.put(pkg, label);
+        }
+        Collections.sort(packages, (a, b) -> labels.get(a).compareToIgnoreCase(labels.get(b)));
+        CharSequence[] names = new CharSequence[packages.size()];
+        for (int i = 0; i < names.length; i++) {
+            String pkg = packages.get(i);
+            names[i] = labels.get(pkg) + "\n" + pkg;
+        }
+        Set<String> selected = new HashSet<>();
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.restore_hidden_apps)
+                .setMultiChoiceItems(names, new boolean[names.length], (window, which, checked) -> {
+                    if (checked) selected.add(packages.get(which));
+                    else selected.remove(packages.get(which));
+                    ((AlertDialog) window).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(!selected.isEmpty());
+                })
+                .setPositiveButton(R.string.restore_selected, null)
+                .setNegativeButton(android.R.string.cancel, null)
+                .create();
+        dialog.setOnShowListener(window -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                if (!visibility.restore(selected)) {
+                    Toast.makeText(this, R.string.visibility_not_saved, Toast.LENGTH_LONG).show();
+                    return;
+                }
+                setResult(RESULT_OK);
+                refresh();
+                dialog.dismiss();
+            });
+        });
+        dialog.show();
     }
 
     private boolean hasOnTvChoices() {

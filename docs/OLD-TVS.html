@@ -147,4 +147,23 @@ reboot, and this TV's ADB can require local debugging to be toggled afterward. R
 confirmation still requires working ADB; there is no verified physical-remote rescue path.
 Do not uninstall the new launcher while the stock launcher is disabled. The Xiaomi Mi TV 2
 and Android 4.4 runtime remain unverified on physical hardware.</p>
+<h3>Launcher 2.5: hiding and restoring icons</h3>
+<p>Hold OK on an app tile and choose Hide icon; App info is still available in that menu.
+Hold OK on Settings, open Launcher settings, then Hidden apps to select and restore icons.
+This only filters tiles, dock entries and module cards. It never disables or uninstalls a
+package. User choices survive launcher restarts, in-place APK updates and layout/theme resets;
+theme/configuration <code>hidden_apps</code> remains a separate filter.</p>
+<p>The release build, lint, 61 JVM tests (including 10 visibility regressions) and 18 Python
+tests passed. On the Sony, a TV-local 600-second rollback was armed before installing 2.5
+(versionCode 6), signed with the same key as 2.4. The updated version, default HOME and actual
+foreground were checked. A sustained D-pad OK press opened the menu without activating its
+first row on release. App info, hiding a test tile, process-restart persistence and in-place
+reinstall persistence were exercised successfully.</p>
+<p>ADB went offline again before the restoration dialog could be exercised. Reconnecting the
+target and an independent Python ADB handshake both failed; USB debugging must be toggled
+locally before completing that check and restoring the test tile. The temporary rollback
+was not disarmed while verification was incomplete. Its final outcome still needs to be read
+back from the TV. Do not count this as complete on-device hide/restore acceptance.
+The API 21 emulator could not start this time because the host had insufficient free disk
+space; earlier 2.4 emulator results do not establish 2.5 runtime compatibility.</p>
 </main></body></html>

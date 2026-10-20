@@ -48,9 +48,24 @@
         </LinearLayout>
 
         <TextView
-            android:id="@+id/animationsChoice"
+            android:id="@+id/hiddenAppsChoice"
             style="@style/SettingsRow"
             android:layout_marginTop="28dp"
+            android:tag="font:regular"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="7dp"
+            android:text="@string/hidden_apps_hint"
+            android:textColor="#FFACB8C1"
+            android:textSize="14sp"
+            android:tag="font:regular"/>
+
+        <TextView
+            android:id="@+id/animationsChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="18dp"
             android:tag="font:regular"/>
 
         <TextView

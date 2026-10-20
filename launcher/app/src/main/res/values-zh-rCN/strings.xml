@@ -34,4 +34,13 @@
     <string name="cant_open">无法打开 %1$s</string>
     <string name="date_format">M月d日 EEEE</string>
     <string name="dream_name">时钟</string>
+    <string name="hide_app">隐藏图标</string>
+    <string name="app_info">应用信息</string>
+    <string name="hidden_apps_count">隐藏的应用（%1$d）</string>
+    <string name="hidden_apps_hint">长按应用图标可隐藏；在这里选择要恢复的应用。只隐藏图标，不卸载或停用应用，重置布局也不会清空此列表。</string>
+    <string name="no_hidden_apps">没有隐藏的应用</string>
+    <string name="restore_hidden_apps">选择要恢复的应用</string>
+    <string name="restore_selected">恢复所选</string>
+    <string name="app_hidden">已隐藏 %1$s，可在简洁桌面设置中恢复。</string>
+    <string name="visibility_not_saved">无法保存图标显示设置，请重试。</string>
 </resources>

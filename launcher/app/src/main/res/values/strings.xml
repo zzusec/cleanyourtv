@@ -58,4 +58,13 @@
     <string name="card_state_new">New</string>
     <string name="card_state_new_key">New key</string>
     <string name="card_state_new_label">New name</string>
+    <string name="hide_app">Hide icon</string>
+    <string name="app_info">App info</string>
+    <string name="hidden_apps_count">Hidden apps (%1$d)</string>
+    <string name="hidden_apps_hint">Hold OK on an app to hide its icon. Select hidden apps here to restore them. Apps stay installed and enabled; layout resets do not clear this list.</string>
+    <string name="no_hidden_apps">No hidden apps</string>
+    <string name="restore_hidden_apps">Choose apps to restore</string>
+    <string name="restore_selected">Restore selected</string>
+    <string name="app_hidden">%1$s hidden. Restore it in Launcher settings.</string>
+    <string name="visibility_not_saved">Couldn\'t save icon visibility. Please try again.</string>
 </resources>

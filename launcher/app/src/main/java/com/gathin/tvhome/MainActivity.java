@@ -77,6 +77,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private String sourcePanelAction;
 
     private AppAdapter adapter;
+    private AppVisibility visibility;
     private RecyclerView grid;
     private FrameLayout root;
     private GlassView glass;
@@ -157,6 +158,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         density = getResources().getDisplayMetrics().density;
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).
         Config cfg = Config.load(this);
+        visibility = new AppVisibility(getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE));
         COLUMNS = cfg.columns;
         animations = cfg.animations;
         advancedEffects = cfg.animations && cfg.advancedEffects;
@@ -443,7 +445,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         final String returnKey = lastFocusedKey;
         final int returnSlot = lastFocused;
         final List<Cards.Card> none = Collections.emptyList();
-        cards = moduleCards ? CardFeature.run(() -> Cards.discover(this, hiddenApps, Cards.load(Cards.storeFile(this))), none) : none;
+        cards = moduleCards ? CardFeature.run(() -> Cards.discover(this, visibility.effective(hiddenApps), Cards.load(Cards.storeFile(this))), none) : none;
         adapter.reload(cards.isEmpty() ? none : CardFeature.run(() -> Cards.shown(cards), none));
         lastFocusedKey = returnKey;
         lastFocused = returnSlot;
@@ -1024,6 +1026,29 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     // ---- launcher settings and module cards -------------------------------------------------------
+
+    @Override
+    public void onTileLongPressed(AppAdapter.Entry entry, View anchor) {
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        PopupWindow popup = glassPopup(panel, (int) (240 * density));
+        if (entry.kind != AppAdapter.Entry.HOME_SETTINGS) {
+            addSettingsMenuRow(rows, popup, R.string.hide_app, () -> {
+                if (visibility.hide(entry.pkg)) {
+                    reloadApps(true);
+                    Toast.makeText(this, getString(R.string.app_hidden, entry.label), Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, R.string.visibility_not_saved, Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+        addSettingsMenuRow(rows, popup, R.string.app_info, () -> open(
+                new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + entry.pkg))));
+        panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        popup.setWidth(Math.max((int) (240 * density), panel.getMeasuredWidth()));
+        dropIn(popup, panel, anchor, Gravity.START);
+        rows.getChildAt(0).requestFocus();
+    }
 
     /** Keep a normal Settings click for the TV; the launcher's choices live behind hold OK. */
     private void showSettingsMenu() {
