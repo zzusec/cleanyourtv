@@ -15,6 +15,7 @@ import android.graphics.Outline;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
@@ -143,15 +144,32 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
      */
     void reload(List<Cards.Card> cards) {
         PackageManager pm = ctx.getPackageManager();
-        Intent probe = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
-        List<ResolveInfo> found = pm.queryIntentActivities(probe, 0);
+        Intent leanback = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
+        List<ResolveInfo> found = pm.queryIntentActivities(leanback, 0);
+        // TVs that are not Android TV (MIUI TV on the Xiaomi Mi TV 2) and their sideloaded apps often
+        // declare only CATEGORY_LAUNCHER. Merge that list in rather than replacing: on such a TV the
+        // leanback query still answers, because this launcher itself declares a leanback entry, so an
+        // "empty means fall back" test never fires and the grid would stay empty.
+        List<ResolveInfo> plain = pm.queryIntentActivities(
+                new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0);
+        if (!plain.isEmpty()) {
+            Set<String> have = new HashSet<>();
+            for (ResolveInfo ri : found) {
+                if (ri.activityInfo != null) have.add(ri.activityInfo.packageName);
+            }
+            for (ResolveInfo ri : plain) {
+                if (ri.activityInfo != null && !have.contains(ri.activityInfo.packageName)) found.add(ri);
+            }
+        }
         Map<String, Cards.Card> cardByPkg = new HashMap<>();
         for (Cards.Card c : cards) cardByPkg.put(c.pkg, c);
         List<Entry> fresh = new ArrayList<>();
+        Set<String> seenPkg = new HashSet<>();
         for (ResolveInfo ri : found) {
             if (ri.activityInfo == null) continue;
             String pkg = ri.activityInfo.packageName;
             if (pkg.equals(ctx.getPackageName()) || hidden.contains(pkg)) continue;
+            if (!seenPkg.add(pkg)) continue;   // a package with several launcher activities gets one tile
             ComponentName component = new ComponentName(pkg, ri.activityInfo.name);
             Cards.Card card = cardByPkg.get(pkg);
             if (card != null && !card.component.equals(component)) continue;   // the card stands in for this tile
@@ -182,14 +200,17 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 && pm.resolveActivity(new Intent(Settings.ACTION_HOME_SETTINGS), 0) != null) {
             fresh.add(new Entry(Entry.HOME_SETTINGS, ctx.getString(R.string.home_settings),
                     new ComponentName(ctx, HomeSettingsActivity.class), null,
-                    ctx.getDrawable(R.drawable.ic_home_settings), null, 0));
+                    Tint.get(ctx, R.drawable.ic_home_settings), null, 0));
         }
         items.clear();
         items.addAll(fresh);
         notifyDataSetChanged();
     }
 
+    /** The app's TV banner, or null on Android 4.4 where PackageItemInfo.banner does not exist yet. */
+    @SuppressWarnings("deprecation")
     private Drawable loadBanner(PackageManager pm, ResolveInfo ri) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH) return null;
         int id = ri.activityInfo.banner;
         if (id == 0) id = ri.activityInfo.applicationInfo.banner;
         if (id != 0) {
@@ -197,7 +218,10 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 Resources resources = pm.getResourcesForApplication(ri.activityInfo.applicationInfo);
                 // Keep at least xhdpi detail rather than downsampling artwork before the focus zoom.
                 int density = Math.max(DisplayMetrics.DENSITY_XHIGH, ctx.getResources().getDisplayMetrics().densityDpi);
-                return resources.getDrawableForDensity(id, density, null);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    return resources.getDrawableForDensity(id, density, null);
+                }
+                return resources.getDrawable(id);
             } catch (PackageManager.NameNotFoundException | Resources.NotFoundException ignored) {
             }
         }
@@ -208,6 +232,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     @Override
     public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_app, parent, false);
+        // Tiles are inflated long after setContentView, so the activity's one-pass Fonts.apply misses them.
+        Fonts.apply(v);
         float density = parent.getResources().getDisplayMetrics().density;
         int width = parent.getWidth() > 0 ? parent.getWidth() : parent.getMeasuredWidth();
         int inner = width - parent.getPaddingLeft() - parent.getPaddingRight();
@@ -235,7 +261,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         h.card.setScaleX(focused && animations ? focusScale() : 1f);
         h.card.setScaleY(focused && animations ? focusScale() : 1f);
         h.card.setTranslationY(focused && advancedEffects ? -4f * ctx.getResources().getDisplayMetrics().density : 0f);
-        h.card.setTranslationZ(focused && advancedEffects ? 8f * ctx.getResources().getDisplayMetrics().density : 0f);
+        Holder.setZ(h.card, focused && advancedEffects ? 8f * ctx.getResources().getDisplayMetrics().density : 0f);
         h.banner.setScaleX(focused && advancedEffects ? 1.035f : 1f);
         h.banner.setScaleY(focused && advancedEffects ? 1.035f : 1f);
         if (e.banner != null) {
@@ -274,6 +300,12 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
                 .setComponent(e.component)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+        // Not every app on a plain Android TV (or MIUI TV) answers the leanback category; retry with the
+        // component alone, which starts the same activity without the category filter.
+        if (ctx.getPackageManager().resolveActivity(i, 0) == null) {
+            i = new Intent(Intent.ACTION_MAIN).setComponent(e.component)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+        }
         try {
             ctx.startActivity(i);
             if (advancedEffects && ctx instanceof Activity) {
@@ -394,14 +426,16 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             this.reducedMotion = reducedMotion;
 
             final float density = v.getResources().getDisplayMetrics().density;
-            card.setOutlineProvider(new ViewOutlineProvider() {
-                @Override
-                public void getOutline(View view, Outline outline) {
-                    // 16dp at the design width, scaled down with the tile so small tiles keep the same shape.
-                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius(view.getWidth(), density));
-                }
-            });
-            card.setClipToOutline(true);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                card.setOutlineProvider(new ViewOutlineProvider() {
+                    @Override
+                    public void getOutline(View view, Outline outline) {
+                        // 16dp at the design width, scaled down with the tile so small tiles keep the same shape.
+                        outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius(view.getWidth(), density));
+                    }
+                });
+                card.setClipToOutline(true);
+            }
 
             card.setOnKeyListener((view, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
@@ -421,7 +455,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                     view.setScaleX(1f);
                     view.setScaleY(1f);
                     view.setTranslationY(0f);
-                    view.setTranslationZ(0f);
+                    setZ(view, 0f);
                     banner.setScaleX(1f);
                     banner.setScaleY(1f);
                     name.setAlpha(focused ? 1f : 0f);
@@ -429,18 +463,18 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 } else if (reducedMotion) {
                     view.animate().scaleX(s).scaleY(s)
                             .translationY(focused && advancedEffects ? -4f * density : 0f)
-                            .translationZ(focused && advancedEffects ? 8f * density : 0f)
                             .setDuration(focused ? 120 : 80)
                             .setInterpolator(new DecelerateInterpolator())
                             .withLayer().start();
+                    setZ(view, focused && advancedEffects ? 8f * density : 0f);
                     name.animate().alpha(focused ? 1f : 0f).setDuration(100).start();
                 } else {
                     view.animate().scaleX(s).scaleY(s)
                             .translationY(focused && advancedEffects ? -4f * density : 0f)
-                            .translationZ(focused && advancedEffects ? 8f * density : 0f)
                             .setDuration(advancedEffects ? (focused ? 220 : 170) : (focused ? 260 : 180))
                             .setInterpolator(new OvershootInterpolator(focused ? (advancedEffects ? 0.7f : 1.6f) : 0f))
                             .withLayer().start();
+                    setZ(view, focused && advancedEffects ? 8f * density : 0f);
                     if (advancedEffects) {
                         banner.animate().scaleX(focused ? 1.035f : 1f).scaleY(focused ? 1.035f : 1f)
                                 .setDuration(280).start();
@@ -454,6 +488,11 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                     listener.onTileFocused(pos, view);
                 }
             });
+        }
+
+        /** Elevation is API 21; older TVs have no shadows to lift, so the z stays at 0 there. */
+        static void setZ(View view, float z) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) view.setTranslationZ(z);
         }
     }
 }

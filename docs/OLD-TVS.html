@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Old TVs: Android 4.4 and 7</title><style>body{max-width:68rem;margin:2.5rem auto;padding:0 1.25rem;color:#202624;background:#fafbf8;font:17px/1.8 Georgia,"Songti SC",serif}h1,h2,h3{line-height:1.35}h2{margin-top:2rem}a{color:#175b58}code{font-family:Menlo,monospace;font-size:.85em;overflow-wrap:anywhere}pre{padding:1rem;background:#edf1eb;white-space:pre-wrap;overflow-wrap:anywhere;border-radius:6px}table{display:block;overflow:auto;border-collapse:collapse;max-width:100%}td,th{border:1px solid #bfc9c0;padding:.4rem .65rem;text-align:left}img{max-width:100%;height:auto}li{margin:.4rem 0}@media print{body{margin:0;max-width:none;background:white;font-size:10.5pt}h1,h2,h3{break-after:avoid}pre,tr{break-inside:avoid}table{display:table;font-size:9pt}a{color:inherit}}</style></head><body><main>
+<h1>Old TVs: Android 4.4 and 7</h1>
+<p>The launcher builds down to <strong>Android 4.4 (API 19)</strong>. That is what the two old sets need: the Xiaomi
+Mi TV 2 runs 4.4.2 (MIUI TV, not Android TV), the Sony BRAVIA 4K 2015 runs 7.0. Newer TVs keep the
+behaviour they had, because every newer API sits behind a <code>Build.VERSION</code> check.</p>
+<h2>What had to change</h2>
+<table>
+<thead>
+<tr>
+<th>Was</th>
+<th>Needs</th>
+<th>Now</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>minSdk 26</code></td>
+<td>—</td>
+<td><code>minSdk 19</code></td>
+</tr>
+<tr>
+<td><code>android:fontFamily="@font/outfit_light"</code></td>
+<td>API 26</td>
+<td>static instances in <code>assets/fonts</code>, applied by <code>Fonts.java</code> from <code>android:tag="font:light"</code></td>
+</tr>
+<tr>
+<td><code>android:fontVariationSettings</code></td>
+<td>API 28</td>
+<td>same: one static file per weight, so Android 7 draws the right weight</td>
+</tr>
+<tr>
+<td>vector drawables (<code>@drawable/ic_wifi</code> …)</td>
+<td>API 21</td>
+<td>PNGs per density below 21; original vectors in <code>drawable-anydpi-v21</code> on 21+</td>
+</tr>
+<tr>
+<td><code>android:tint</code>, <code>Drawable.setTint</code></td>
+<td>API 21</td>
+<td><code>Tint.set</code> (a SRC_IN colour filter) and <code>TintedImageView</code></td>
+</tr>
+<tr>
+<td><code>android:drawableTint</code></td>
+<td>API 23</td>
+<td><code>MainActivity.tintPillIcon</code>, following focus</td>
+</tr>
+<tr>
+<td><code>android:textColor="@drawable/pill_text"</code></td>
+<td>21 for a colour selector</td>
+<td>moved to <code>res/color/pill_text.xml</code></td>
+</tr>
+<tr>
+<td><code>android:letterSpacing</code></td>
+<td>API 21</td>
+<td><code>values-v21/styles.xml</code></td>
+</tr>
+<tr>
+<td><code>Theme.Material.*</code></td>
+<td>API 21</td>
+<td><code>Theme.Holo.NoActionBar.Fullscreen</code> below 21, Material from 21</td>
+</tr>
+<tr>
+<td><code>android:elevation</code></td>
+<td>API 21</td>
+<td><code>layout-v21/</code> copies</td>
+</tr>
+<tr>
+<td><code>NetworkCallback</code>, <code>NetworkCapabilities</code>, <code>getAllNetworks</code></td>
+<td>API 21</td>
+<td><code>Platform</code> / <code>PlatformNet</code>, loaded only on 21+</td>
+</tr>
+<tr>
+<td><code>TvInputManager</code>, <code>TvInputInfo</code>, <code>TvContract</code></td>
+<td>API 21</td>
+<td><code>Platform</code> / <code>PlatformTv</code>, loaded only on 21+</td>
+</tr>
+<tr>
+<td><code>getLeanbackLaunchIntentForPackage</code></td>
+<td>API 21</td>
+<td><code>Platform.launchIntent</code> (falls back to <code>getLaunchIntentForPackage</code>)</td>
+</tr>
+<tr>
+<td><code>Canvas.drawRoundRect(float…)</code> and <code>(RectF…)</code></td>
+<td>API 21</td>
+<td><code>RoundRect</code> uses the RectF overload, which is API 1</td>
+</tr>
+<tr>
+<td><code>integer-array</code> resources</td>
+<td>API 21</td>
+<td>constants in <code>HomeKeyService</code></td>
+</tr>
+<tr>
+<td><code>cmd package set-home-activity</code></td>
+<td>Android 6/7</td>
+<td><code>build-and-install.sh</code> falls back to <code>pm disable-user</code> + the HOME intent</td>
+</tr>
+</tbody>
+</table>
+<h2>App grid on a non-Android-TV set</h2>
+<p>MIUI TV apps and sideloaded APKs often declare only <code>CATEGORY_LAUNCHER</code>. The grid now merges that
+list with <code>CATEGORY_LEANBACK_LAUNCHER</code>; an "empty means fall back" test does not work, because the
+launcher itself declares a leanback entry, so the leanback query never comes back empty.</p>
+<h2>Per-model notes</h2>
+<p><code>examples/xiaomi-mi-tv-2/</code> and <code>examples/sony-bravia-4k-2015/</code> hold the debloat lists, with what to
+keep and what the switch does on each. Both are marked "verify against <code>pm list packages</code> first":
+the exact package set differs by firmware build, and <code>pm disable-user</code> on a missing package is a
+harmless "not found".</p>
+<p>The Sony 2015's adbd is fragile. It drops after a burst of connections and often does not come back
+after a reboot until USB debugging is switched on again on the TV. Batch ADB work, do not run it in
+parallel, and use <code>tools/tv.py</code> (a separate ADB client) if the stock <code>adb</code> binary reports
+"No route to host" while port 5555 is open.</p>
+<h2>Sony 2015 device check (2026-10-20)</h2>
+<p>The initial launcher 2.4 APK installed and rendered on the SVP-DTV15 / Android 7.0 device. D-pad navigation,
+the network settings entry and the main Sony settings entry were exercised successfully.
+The actual stock HOME component is <code>com.google.android.leanbacklauncher/.MainActivity</code>, not
+<code>com.google.android.tvlauncher</code>.</p>
+<p>Although this firmware advertises <code>cmd package set-home-activity</code>, requesting the new default
+still left HOME resolving to the stock launcher (priority 2). A successful shell command alone
+does not prove the default changed. The stock launcher was kept enabled, and no debloat list
+was applied. ADB became offline again during verification, so a forced handover was not attempted.
+The original launcher was verified in the foreground before that disconnect.</p>
+<p>The device screenshots exposed clipped raster icons in that initial APK. The PNGs have since
+been re-rendered at each icon's original dp size, and the original vectors restored for API 21+.
+Pixel-level regression tests now check all 40 PNGs and the settings gear's transparent centre.
+The corrected APK builds and passes lint and tests, but has not yet been installed on this TV
+because ADB remains offline.</p>
+<p>This is not a completed default-launcher replacement or a reboot test. The Xiaomi Mi TV 2 and
+the Android 4.4 runtime remain unverified on physical hardware.</p>
+</main></body></html>

@@ -10,7 +10,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.ApplicationInfo;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -19,17 +18,9 @@ import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ColorDrawable;
-import android.media.tv.TvContract;
-import android.media.tv.TvInputInfo;
-import android.media.tv.TvInputManager;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
-import android.net.NetworkRequest;
 import android.net.Uri;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -67,7 +58,6 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -98,7 +88,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean animations;
     private boolean advancedEffects;
     private TextView greeting;
-    private View btnInputs;
+    private TextView btnInputs;
     private TextView btnWifi;
     private TextView shamsiDate;
     private boolean shamsi;
@@ -136,41 +126,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     /** Refreshes the network pill when the connection changes: at boot Wi-Fi often connects after Home is shown. */
-    private final ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
-        @Override
-        public void onAvailable(@NonNull Network network) {
-            handler.post(MainActivity.this::updateWifiLabel);
-        }
-
-        @Override
-        public void onLost(@NonNull Network network) {
-            handler.post(MainActivity.this::updateWifiLabel);
-        }
-    };
+    private Platform.NetWatcher netWatcher;
     /** Shows the Inputs pill once the TV registers an input: at boot HDMI inputs can appear after Home is shown. */
-    private final TvInputManager.TvInputCallback inputCallback = new TvInputManager.TvInputCallback() {
-        @Override
-        public void onInputAdded(String inputId) {
-            updateInputsButton();
-        }
-
-        @Override
-        public void onInputRemoved(String inputId) {
-            updateInputsButton();
-        }
-    };
-    /** Listens for any VPN coming up or going down, even one this app's traffic is excluded from. */
-    private final ConnectivityManager.NetworkCallback vpnCallback = new ConnectivityManager.NetworkCallback() {
-        @Override
-        public void onAvailable(@NonNull Network network) {
-            handler.post(MainActivity.this::updateWifiLabel);
-        }
-
-        @Override
-        public void onLost(@NonNull Network network) {
-            handler.post(MainActivity.this::updateWifiLabel);
-        }
-    };
+    private Platform.TvWatcher tvWatcher;
     private final IntentFilter packageFilter = new IntentFilter();
     private final BroadcastReceiver packageReceiver = new BroadcastReceiver() {
         @Override
@@ -195,6 +153,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Fonts.apply(findViewById(android.R.id.content));
         density = getResources().getDisplayMetrics().density;
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).
         Config cfg = Config.load(this);
@@ -216,8 +175,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         glass = findViewById(R.id.glass);
         ambient = findViewById(R.id.ambient);
         // The glow is one bitmap, so its alpha can be applied while drawing it. Otherwise every frame of
-        // a fade renders it into a full-screen offscreen buffer first.
-        ambient.forceHasOverlappingRendering(false);
+        // a fade renders it into a full-screen offscreen buffer first (API 24; older versions always did).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) ambient.forceHasOverlappingRendering(false);
         heroName = findViewById(R.id.heroName);
         greeting = findViewById(R.id.greeting);
         btnWifi = findViewById(R.id.btnWifi);
@@ -307,7 +266,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
 
         btnInputs = findViewById(R.id.btnInputs);
-        View btnSettings = findViewById(R.id.btnSettings);
+        TextView btnSettings = findViewById(R.id.btnSettings);
         btnInputs.setOnClickListener(v -> showInputs());
         btnWifi.setOnClickListener(v -> openNetworkPill());
         btnWifi.setOnLongClickListener(v -> {
@@ -340,12 +299,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnInputs.setOnKeyListener(pillKeys);
         btnWifi.setOnKeyListener(pillKeys);
         btnSettings.setOnKeyListener(pillKeys);
-        if (advancedEffects) {
-            for (View button : new View[]{btnInputs, btnWifi, btnSettings}) {
-                button.setOnFocusChangeListener((view, focused) -> view.animate()
-                        .scaleX(focused ? 1.04f : 1f).scaleY(focused ? 1.04f : 1f)
-                        .setDuration(160).start());
-            }
+        // The pills' icons follow the text colour (res/color/pill_text): white unfocused, dark on the
+        // white focused pill. android:drawableTint did this and is API 23, so it is done here.
+        for (TextView button : new TextView[]{btnInputs, btnWifi, btnSettings}) {
+            tintPillIcon(button);
+            button.setOnFocusChangeListener((view, focused) -> {
+                tintPillIcon((TextView) view);
+                if (advancedEffects) {
+                    view.animate().scaleX(focused ? 1.04f : 1f).scaleY(focused ? 1.04f : 1f)
+                            .setDuration(160).start();
+                }
+            });
         }
 
         // Hide the glass when focus leaves the tiles.
@@ -359,16 +323,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         packageFilter.addAction(Intent.ACTION_PACKAGE_CHANGED);
         packageFilter.addDataScheme("package");
 
-        ConnectivityManager cm = getSystemService(ConnectivityManager.class);
-        TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
-        if (tim != null) tim.registerCallback(inputCallback, handler);
-        if (cm != null) {
-            cm.registerDefaultNetworkCallback(networkCallback);
-            cm.registerNetworkCallback(new NetworkRequest.Builder()
-                    .addTransportType(NetworkCapabilities.TRANSPORT_VPN)
-                    .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
-                    .build(), vpnCallback);
-        }
+        netWatcher = Platform.netWatcher();
+        if (netWatcher != null) netWatcher.register(this, () -> handler.post(MainActivity.this::updateWifiLabel));
+        tvWatcher = Platform.tvWatcher();
+        if (tvWatcher != null) tvWatcher.register(this, this::updateInputsButton);
     }
 
     /**
@@ -534,13 +492,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        ConnectivityManager cm = getSystemService(ConnectivityManager.class);
-        TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
-        if (tim != null) tim.unregisterCallback(inputCallback);
-        if (cm != null) {
-            cm.unregisterNetworkCallback(networkCallback);
-            cm.unregisterNetworkCallback(vpnCallback);
-        }
+        if (tvWatcher != null) tvWatcher.unregister(this);
+        if (netWatcher != null) netWatcher.unregister(this);
     }
 
     @Override
@@ -700,7 +653,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             ambient.setBackground(glow);
         }
         // The default tint mode, SRC_IN, keeps the mask's alpha and takes the colour from the tint.
-        glow.setTint(0xFF000000 | color);
+        // Drawable.setTint is API 21; a SRC_IN colour filter is the same and works on 4.4 too.
+        Tint.set(glow, 0xFF000000 | color);
     }
 
     private void transitionAmbient(int color) {
@@ -828,35 +782,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         boolean vpn = false, online = false;
         int icon = R.drawable.ic_wifi;
         try {
-            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-            boolean wifi = false, ethernet = false;
-            // All networks, not just the active one: with a VPN up the active network is the VPN itself.
-            for (Network net : cm != null ? cm.getAllNetworks() : new Network[0]) {
-                NetworkCapabilities caps = cm.getNetworkCapabilities(net);
-                if (caps == null) continue;
-                if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
-                    vpn = true;
-                    continue;
-                }
-                if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) continue;
-                online = true;
-                if (caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) ethernet = true;
-                if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) wifi = true;
-            }
+            // Platform answers on 4.4 too: the NetworkCapabilities walk is only loaded on 5+.
+            Platform.Net net = Platform.net(this);
+            online = net.online;
+            vpn = net.vpn;
             if (!online) {
                 text = getString(R.string.offline);
                 vpn = false;
-            } else if (ethernet) {
+            } else if (net.ethernet) {
                 text = getString(R.string.ethernet);
                 icon = R.drawable.ic_ethernet;
-            } else if (wifi) {
-                WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-                WifiInfo info = wm != null ? wm.getConnectionInfo() : null;
-                String ssid = info != null ? info.getSSID() : null;
-                if (ssid != null) {
-                    ssid = ssid.replace("\"", "").trim();
-                    if (!ssid.isEmpty() && !ssid.contains("unknown") && !ssid.equals("0x")) text = ssid;
-                }
+            } else if (net.wifi && net.ssid != null) {
+                text = net.ssid;
             }
         } catch (Exception ignored) {
         }
@@ -865,7 +802,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (vpn || vpnDown) {
             // Network name, then the green lock-and-VPN (or red "VPN off") capsule drawn in place of the word.
             String badge = getString(vpn ? R.string.vpn : R.string.vpn_off);
-            VpnBadge span = new VpnBadge(vpn ? getDrawable(R.drawable.ic_lock) : null, density);
+            VpnBadge span = new VpnBadge(vpn ? Tint.get(this, R.drawable.ic_lock) : null, density);
             // The pill has a maximum width and ellipsizes at the end, which would cut the badge off after
             // a long network name, so shorten the name to whatever room the badge leaves. The total paddings
             // include the Wi-Fi icon.
@@ -879,13 +816,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         } else {
             btnWifi.setText(text);
         }
-        btnWifi.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0);
+        btnWifi.setCompoundDrawablesWithIntrinsicBounds(icon, 0, 0, 0);
+        tintPillIcon(btnWifi);   // the icon was just replaced; keep it in the pill's text colour
+    }
+
+    /**
+     * Tints a pill's compound drawables (the Wi-Fi, Inputs and Settings icons) from the same colour
+     * selector as its text. updateWifiLabel() replaces the network icon, so it calls this too.
+     */
+    private void tintPillIcon(TextView pill) {
+        int color = Tint.stateColor(this, pill.isFocused());
+        Drawable[] icons = pill.getCompoundDrawables();
+        for (Drawable d : icons) if (d != null) Tint.set(d, color);
     }
 
     /** The network pill opens the VPN app when one is configured and installed, otherwise Wi-Fi settings. */
     private void openNetworkPill() {
-        Intent i = vpnApp.isEmpty() ? null : getPackageManager().getLeanbackLaunchIntentForPackage(vpnApp);
-        if (i == null && !vpnApp.isEmpty()) i = getPackageManager().getLaunchIntentForPackage(vpnApp);
+        Intent i = Platform.launchIntent(getPackageManager(), vpnApp);
         open(i != null ? i : systemIntent(Settings.ACTION_WIFI_SETTINGS));
     }
 
@@ -906,23 +853,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** Hides the Inputs pill when it would have nothing to list: streaming boxes have no HDMI-in, AV or tuner. */
     private void updateInputsButton() {
-        boolean any = liveTvIntent() != null || !sourcePanelService.isEmpty();
-        TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
-        if (!any && tim != null) {
-            for (TvInputInfo info : tim.getTvInputList()) {
-                if (info.isPassthroughInput()) {
-                    any = true;
-                    break;
-                }
-            }
-        }
+        boolean any = liveTvIntent() != null || !sourcePanelService.isEmpty() || Platform.hasPassthroughInputs(this);
         btnInputs.setVisibility(any ? View.VISIBLE : View.GONE);
     }
 
     /** The Live TV app's launch intent: its leanback entry point, or the configured action if it has none. */
     private Intent liveTvIntent() {
         if (liveTvPkg.isEmpty()) return null;
-        Intent i = getPackageManager().getLeanbackLaunchIntentForPackage(liveTvPkg);
+        Intent i = Platform.launchIntent(getPackageManager(), liveTvPkg);
         if (i != null || liveTvAction.isEmpty()) return i;
         Intent byAction = new Intent(liveTvAction).setPackage(liveTvPkg);
         return getPackageManager().resolveActivity(byAction, 0) != null ? byAction : null;
@@ -953,7 +891,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      *  which the Live TV app handles; where nothing takes that, the configured `input_action` is sent
      *  with the same URI instead (XGIMI's HDMI player only answers com.xgimi.action.hdmiPlayer). */
     private void openInput(String inputId) {
-        Uri uri = TvContract.buildChannelUriForPassthroughInput(inputId);
+        if (!Platform.tvInputs()) return;
+        Uri uri = PlatformTv.passthroughUri(inputId);
         Intent view = new Intent(Intent.ACTION_VIEW).setDataAndType(uri, "vnd.android.cursor.item/channel")
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
@@ -978,49 +917,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         int width = Math.max(anchor.getWidth(), (int) (150 * density));
         final PopupWindow popup = glassPopup(panel, width);
 
-        TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         boolean sawNonHdmi = false;
         String tunerId = null;
-        boolean tunerIsHw = false;
-        if (tim != null) {
-            List<TvInputInfo> inputs = new ArrayList<>(tim.getTvInputList());
-            // HDMI ports first in port order, then AV and the rest.
-            Collections.sort(inputs, (a, b) -> {
-                boolean ha = a.getType() == TvInputInfo.TYPE_HDMI, hb = b.getType() == TvInputInfo.TYPE_HDMI;
-                if (ha != hb) return ha ? -1 : 1;
-                return String.valueOf(a.loadLabel(this)).compareToIgnoreCase(String.valueOf(b.loadLabel(this)));
-            });
-            // Some TVs (Sony) report every HDMI port as connected whether or not anything is plugged in,
-            // so drop the HDMI status then. A TV with every port really in use loses it too.
-            int hdmiPorts = 0, hdmiConnected = 0;
-            for (TvInputInfo info : inputs) {
-                if (!info.isPassthroughInput() || info.getType() != TvInputInfo.TYPE_HDMI) continue;
-                hdmiPorts++;
-                if (tim.getInputState(info.getId()) == TvInputManager.INPUT_STATE_CONNECTED) hdmiConnected++;
-            }
-            boolean hdmiStateBogus = hdmiPorts > 1 && hdmiConnected == hdmiPorts;
-            for (TvInputInfo info : inputs) {
-                if (info.getType() == TvInputInfo.TYPE_TUNER
-                        && (info.getServiceInfo().applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0) {
-                    // Prefer a hardware tuner: the framework names those ".../HW<n>". System apps such as
-                    // AirPlay also register software inputs of type TUNER and may sort first (seen on TCL G05).
-                    boolean hw = info.getId().matches(".*/HW\\d+$");
-                    if (tunerId == null || (hw && !tunerIsHw) || (hw == tunerIsHw && info.getId().compareTo(tunerId) < 0)) {
-                        tunerId = info.getId();
-                        tunerIsHw = hw;
-                    }
-                }
-                if (!info.isPassthroughInput()) continue;
-                CharSequence l = info.loadLabel(this);
-                String label = l == null ? info.getId() : l.toString();
-                boolean hdmi = info.getType() == TvInputInfo.TYPE_HDMI;
-                if (hdmi && !label.toUpperCase(Locale.ROOT).contains("HDMI")) label = "HDMI " + label;
-                final String id = info.getId();
-                int state = hdmi && hdmiStateBogus ? -1 : tim.getInputState(id);
-                if (!hdmi && rows.getChildCount() > 0 && !sawNonHdmi) addSeparator(rows);
-                if (!hdmi) sawNonHdmi = true;
-                addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av, label, state,
-                        () -> openInput(id));
+        // The TvInputManager walk lives in PlatformTv: Android 4.4 has no such classes.
+        if (Platform.tvInputs()) {
+            PlatformTv.Inputs tv = PlatformTv.menu(this);
+            tunerId = tv.tunerId;
+            for (PlatformTv.Row input : tv.rows) {
+                if (!input.hdmi && rows.getChildCount() > 0 && !sawNonHdmi) addSeparator(rows);
+                if (!input.hdmi) sawNonHdmi = true;
+                addInputRow(rows, popup, input.hdmi ? R.drawable.ic_input : R.drawable.ic_av, input.label,
+                        input.state, () -> openInput(input.id));
             }
         }
         // Nothing to list where there is no TvInputManager: the TV's own source panel switches inputs.
@@ -1028,9 +935,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             addInputRow(rows, popup, R.drawable.ic_input, getString(R.string.inputs), -1, this::openSourcePanel);
         }
         Intent liveTv = liveTvIntent();
-        if (liveTv != null && tunerId != null) {
+        if (liveTv != null && tunerId != null && Platform.tvInputs()) {
+            Uri tuner = PlatformTv.passthroughUri(tunerId);
             liveTv = new Intent(Intent.ACTION_VIEW)
-                    .setDataAndType(TvContract.buildChannelUriForPassthroughInput(tunerId), "vnd.android.cursor.item/channel")
+                    .setDataAndType(tuner, "vnd.android.cursor.item/channel")
                     .setPackage(liveTvPkg);
         }
         if (liveTv != null) {
@@ -1057,7 +965,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));   // needed for Back to dismiss
         popup.setOutsideTouchable(true);
         popup.setAnimationStyle(0);
-        popup.setElevation(0f);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) popup.setElevation(0f);
         popup.setOnDismissListener(() -> {
             if (openPopup == popup) openPopup = null;
         });
@@ -1087,16 +995,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, int state, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
-        ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
+        Fonts.apply(row);
+        TintedImageView icon = row.findViewById(R.id.icon);
+        icon.setImageResource(iconRes);
+        // android:tint is API 21 and was dropped from the layout: TintedImageView tints from the same
+        // selector on every version, following the row's focus.
+        icon.setTintColors(getResources().getColorStateList(R.color.pill_text));
         ((TextView) row.findViewById(R.id.title)).setText(title);
         TextView status = row.findViewById(R.id.status);
         View dot = row.findViewById(R.id.dot);
         // This TV reports "standby" for every port whether or not something is plugged in, so only
         // definite states are shown.
-        if (state == TvInputManager.INPUT_STATE_CONNECTED) {
+        if (state == PlatformTv.STATE_CONNECTED) {
             status.setText(R.string.connected);
             dot.setVisibility(View.VISIBLE);
-        } else if (state == TvInputManager.INPUT_STATE_DISCONNECTED) {
+        } else if (state == PlatformTv.STATE_DISCONNECTED) {
             status.setText(R.string.not_connected);
             dot.setVisibility(View.GONE);
         } else {
@@ -1129,6 +1042,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void addSettingsMenuRow(LinearLayout rows, PopupWindow popup, int title, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
+        Fonts.apply(row);
         row.findViewById(R.id.icon).setVisibility(View.GONE);
         row.findViewById(R.id.dot).setVisibility(View.GONE);
         row.findViewById(R.id.status).setVisibility(View.GONE);
@@ -1175,6 +1089,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (card == null) return;
 
         View panel = getLayoutInflater().inflate(R.layout.dialog_card_prompt, root, false);
+        Fonts.apply(panel);
         ((TextView) panel.findViewById(R.id.title)).setText(getString(R.string.card_prompt_title, card.appLabel));
         ((TextView) panel.findViewById(R.id.body)).setText(card.state == Cards.State.RESIGNED
                 ? getString(R.string.card_prompt_resigned, card.appLabel)
@@ -1260,6 +1175,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         Collections.sort(listed, Cards::byLabel);
         for (Cards.Card card : listed) {
             View row = getLayoutInflater().inflate(R.layout.item_card_row, rows, false);
+            Fonts.apply(row);
             row.setTag(card.pkg);
             ((TextView) row.findViewById(R.id.title)).setText(card.label);
             TextView app = row.findViewById(R.id.app);

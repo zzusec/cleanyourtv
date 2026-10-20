@@ -3,9 +3,19 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.software.live_tv" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <!-- Android 4.4 TVs (Xiaomi Mi TV 2) are not Android TV; without this the APK refuses to install
+         on a device that declares no leanback feature at all. -->
+    <uses-feature android:name="android.hardware.type.television" android:required="false" />
+    <!-- Implied by ACCESS_FINE_LOCATION, which is only used to read the Wi-Fi name; Android TV has no GPS. -->
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.location.network" android:required="false" />
+    <!-- Implied by android:screenOrientation="landscape"; every TV is landscape, and a required feature
+         would keep the APK off anything that does not declare it (Xiaomi Mi TV 2 included). -->
+    <uses-feature android:name="android.hardware.screen.landscape" android:required="false" />
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -34,6 +44,7 @@
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:banner="@drawable/banner"
+        android:isGame="false"
         android:theme="@style/Theme.TvHome"
         android:allowBackup="false"
         android:localeConfig="@xml/locales_config">

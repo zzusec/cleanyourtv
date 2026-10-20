@@ -60,18 +60,18 @@ public class GlassView extends View {
             glow.setStrokeWidth(i * 2f * density);
             glow.setColor((0x30 / i) << 24 | 0xFFFFFF);
             float o = i * density;
-            canvas.drawRoundRect(rect.left - o, rect.top - o, rect.right + o, rect.bottom + o, radius + o, radius + o, glow);
+            RoundRect.draw(canvas, rect.left - o, rect.top - o, rect.right + o, rect.bottom + o, radius + o, glow);
         }
 
-        canvas.drawRoundRect(rect, radius, radius, fill);
+        RoundRect.draw(canvas, rect.left, rect.top, rect.right, rect.bottom, radius, fill);
 
         // Sheen across the top 45%: clipRect stays on the GPU (clipPath did not on the MT5895) and
         // the round rect under it keeps the top corners rounded with a flat bottom edge.
         canvas.save();
         canvas.clipRect(rect.left, rect.top, rect.right, rect.top + rect.height() * 0.45f);
-        canvas.drawRoundRect(rect, radius, radius, specular);
+        RoundRect.draw(canvas, rect.left, rect.top, rect.right, rect.bottom, radius, specular);
         canvas.restore();
 
-        canvas.drawRoundRect(rect, radius, radius, rim);
+        RoundRect.draw(canvas, rect.left, rect.top, rect.right, rect.bottom, radius, rim);
     }
 }

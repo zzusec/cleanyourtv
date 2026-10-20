@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://cleanyour.tv">cleanyour.tv</a> ·
   <a href="PROMPT.md">The prompt</a> ·
-  <a href="examples/">66 TV lists</a> ·
+  <a href="examples/">68 TV lists</a> ·
   <a href="SHOWCASE.md">15 built on it</a> ·
   <a href="https://x.com/gathint/status/2111379569030939102">The tweet</a>
 </p>
@@ -23,7 +23,7 @@ Strip the bloatware from any Android TV or Google TV over Wi-Fi, and replace the
 screen with a clean launcher that looks like an Apple TV. **No root, no cable, nothing uninstalled,
 and a one-line restore if you change your mind.**
 
-<h3 align="center">66 TVs tested &nbsp;·&nbsp; 25 brands &nbsp;·&nbsp; 14 languages &nbsp;·&nbsp; 300 KB launcher</h3>
+<h3 align="center">68 TVs tested or profiled &nbsp;·&nbsp; 25 brands &nbsp;·&nbsp; 14 languages &nbsp;·&nbsp; 424 KB launcher</h3>
 
 ![Before: stock Google TV home with a sponsored ad. After: the Clean Your TV launcher](docs/stock-vs-new-side.jpg)
 
@@ -90,9 +90,9 @@ systems; see [SHOWCASE.md](SHOWCASE.md) for a webOS port. **Fire TV** takes the 
 since Fire OS will not hand Home to a third-party launcher. A few China-market TCL sets refuse to
 install any launcher at all; their lists say so in the header.
 
-Tested lists from contributors, one folder per model in [`examples/`](examples/):
+Contributor lists and provisional profiles (marked unverified), one folder per model in [`examples/`](examples/):
 
-**TCL** 14 · **Xiaomi** 14 · **Sony** 9 · **Philips** 4 · **Hisense** 3 · **CHiQ** 2 · **Skyworth** 2 ·
+**TCL** 14 · **Xiaomi** 15 · **Sony** 10 · **Philips** 4 · **Hisense** 3 · **CHiQ** 2 · **Skyworth** 2 ·
 AiPro2K · Amazon Fire TV Stick · BenQ · Chromecast with Google TV · Hitachi · Insignia Fire TV ·
 NVIDIA Shield · OnePlus · Panasonic · PRISM+ · RCA · Redmi · SANYO · Thomson · Toshiba Fire TV · Vu ·
 Stellamore and XGIMI projectors
@@ -127,6 +127,7 @@ Stellamore and XGIMI projectors
 | Skyworth SWTV-21AE (sunnyvale, MediaTek) | Android TV 14 |
 | Skyworth SWTV-24NA-4K NF (eleonas, MediaTek mt5896), US | Google TV 14 |
 | Sony BRAVIA 4K AE2 (BRAVIA_AE2, MediaTek MT5897), North America | Google TV 14 |
+| Sony BRAVIA 4K 2015 (SVP-DTV15, China) | Android TV 7.0 |
 | Sony BRAVIA 4K GB (BRAVIA_ATV2_EU, BRAVIA_ATV2) | Android TV 9 |
 | Sony BRAVIA 4K UR2 (BRAVIA_UR2_4K, MediaTek) | Android TV 10 |
 | Sony BRAVIA 4K VH2 (KD-55X80J, BRAVIA_VH2, MediaTek), EU | Google TV 12 |
@@ -157,6 +158,7 @@ Stellamore and XGIMI projectors
 | Xiaomi Mi Box S (MIBOX4, oneday), streaming box | Android TV 9 |
 | Xiaomi Mi Box S 2nd gen (MiTV-AFKR0, jaws), streaming box | Google TV 11 |
 | Xiaomi Mi TV (MiTV-MOOQ0, croods) | Android TV 10 |
+| Xiaomi Mi TV 2 (2014-2015, China; unverified) | Android 4.4.2 expected |
 | Xiaomi Mi TV 4A (MiTV-MOOQ1) | Android TV 10 |
 | Xiaomi MiTV-AESP0 stick (aquaman, 1 GB) | Android TV 9 |
 | Xiaomi MiTV-ASTP1 (maverick), China firmware 2.40.641.0514.cn, 1 GB RAM, 720p | Android TV 9 (CN build) |
@@ -216,11 +218,24 @@ The install scripts ask the TV which launcher owns Home and only disable one the
 
 ## The launcher
 
-A small native Android TV app (`com.gathin.tvhome`, about 300 KB installed) in plain Java with
-AndroidX RecyclerView and nothing heavier. Built for sets with 1 GB of RAM: no blur, no video, no
-network, no background services. It needs JDK 17 and Android SDK platform 34 to build; on macOS,
+A small native app (`com.gathin.tvhome`, about 400 KB installed) in plain Java with AndroidX
+RecyclerView and nothing heavier. Built for sets with 1 GB of RAM: no blur, no video, no network, no
+background services. It runs from **Android 4.4 (API 19)** up, which covers older sets that are not
+Android TV at all: the Xiaomi Mi TV 2 (Android 4.4, MIUI TV) and the Sony BRAVIA 4K 2015
+(Android 7.0). Everything newer than API 19 is used behind a version check, so a modern TV behaves
+exactly as before. It needs JDK 17 and Android SDK platform 34 to build; on macOS,
 `brew install openjdk@17 android-commandlinetools` and `sdkmanager "platforms;android-34" "build-tools;34.0.0"`. On Linux
 the install script finds `~/Android/Sdk` and the `java` on your PATH.
+
+What the old-TV support changes, and why:
+
+- **Fonts** are static instances of Outfit in `assets/fonts`, applied in code from `android:tag="font:light"` (`Fonts.java`). `android:fontFamily="@font/..."` needs API 26, and Android 7 draws the default weight of a variable font whatever the file asks for.
+- **Icons** use correctly scaled PNGs per density below API 21, and the original vectors in `drawable-anydpi-v21` on newer devices. The colour selectors moved to `res/color`, since `android:textColor="@drawable/..."` is only a colour on newer versions.
+- **Network and TV inputs** go through `Platform`/`PlatformNet`/`PlatformTv`: `NetworkCallback`, `NetworkCapabilities`, `TvInputManager` and `getLeanbackLaunchIntent` are all API 21, and Android 4.4 has no such classes at all. The two API 21 classes are only loaded after the version check.
+- **The app grid** merges `CATEGORY_LAUNCHER` with `CATEGORY_LEANBACK_LAUNCHER`. MIUI TV and sideloaded apps often declare only the former, and an "empty means fall back" test never fires because the launcher itself declares a leanback entry.
+- **Install script**: Android 5 and older have no `cmd` binary, so `build-and-install.sh` uses `pm disable-user` plus the HOME intent there instead of `cmd package set-home-activity`.
+
+The full table of what changed and why is in [`docs/OLD-TVS.md`](docs/OLD-TVS.md).
 
 - **Configure** in [`config.xml`](launcher/app/src/main/res/values/config.xml): dock order, hidden apps, the Live TV package, columns (tiles shrink from 5 up), rows under the dock, an optional VPN app for the network pill, and `reduced_motion` for TVs whose GPU cannot keep up.
 - **On-TV launcher settings:** click Settings for the TV's system settings, or hold OK on Settings and choose Launcher settings to set 4, 5, 6 or 7 apps per row, turn animations on or off, and opt into advanced effects. The advanced option adds tile lift, icon zoom and smooth ambient-colour transitions; it may use more memory. Use Follow theme to clear on-TV choices. Pushing or resetting a theme also clears them.
@@ -232,7 +247,7 @@ the install script finds `~/Android/Sdk` and the `java` on your PATH.
 - **Module cards** let any TV app declare its own tile (label, caption, glow). The launcher asks you once per app, Keep hidden by default, and remembers the answer for that app's signing key and card name. Hold OK on Settings and choose Module cards to change your mind. How to make one: [`docs/modules.md`](docs/modules.md); the contract: [`docs/specs/card.md`](docs/specs/card.md).
 - **Clock screensaver**: a drifting clock over the glow, so nothing burns in. Pick "Clock" in the TV's screensaver settings, or over ADB:
   `tools/tv.py 'settings put secure screensaver_components com.gathin.tvhome/.ClockDream; settings put secure screensaver_enabled 1'`
-- **Remote keys**: an optional accessibility service keeps the remote's Input button working on Google TV (`INPUT_KEY_SERVICE=1` at install), another fixes sticks whose Home key sends ALL_APPS and opens Settings from the remote's gear button, even one Android does not map (`HOME_KEY_SERVICE=1`, scancodes or keycodes in `config.xml`).
+- **Remote keys**: an optional accessibility service keeps the remote's Input button working on Google TV (`INPUT_KEY_SERVICE=1` at install), another fixes sticks whose Home key sends ALL_APPS and opens Settings from the remote's gear button, even one Android does not map (`HOME_KEY_SERVICE=1`; scancodes and keycodes are the constants at the top of `HomeKeyService.java`, because `integer-array` resources need API 21).
 - **Navigation** is deliberate: Up and Down move one row, the top buttons never fall through to tiles and Down from them returns to the dock tile you came from, the last focused app is remembered, and installing or removing an app refreshes the tiles while Home is open.
 - **Artwork**: app banners load at xhdpi or better, so low-density TV UIs do not downsample them before the focus zoom.
 

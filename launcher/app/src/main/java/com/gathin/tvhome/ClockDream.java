@@ -44,6 +44,7 @@ public class ClockDream extends DreamService {
         setFullscreen(true);
         setScreenBright(false);
         setContentView(R.layout.dream_clock);
+        Fonts.apply(findViewById(android.R.id.content));
 
         content = findViewById(R.id.dreamContent);
         View ambient = findViewById(R.id.dreamAmbient);

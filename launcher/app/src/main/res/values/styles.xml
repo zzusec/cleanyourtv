@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.TvHome" parent="android:Theme.Material.NoActionBar.Fullscreen">
+    <!-- Theme.Material needs API 21; old TVs (Xiaomi Mi TV 2, Android 4.4) take the Holo equivalent.
+         values-v21/styles.xml holds the Material parent for everything newer. -->
+    <style name="Theme.TvHome" parent="android:Theme.Holo.NoActionBar.Fullscreen">
         <item name="android:windowBackground">@android:color/black</item>
         <item name="android:colorBackground">@android:color/black</item>
         <item name="android:windowAnimationStyle">@null</item>
     </style>
 
-    <!-- Frosted pill, tvOS style. -->
+    <!-- Frosted pill, tvOS style. The font is set in code (Fonts.apply) from the view's tag, because
+         android:fontFamily="@font/..." needs API 26 and this launcher runs on 19. -->
     <style name="TopButtonBase">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">42dp</item>
@@ -15,12 +18,9 @@
         <item name="android:paddingEnd">20dp</item>
         <item name="android:gravity">center</item>
         <item name="android:background">@drawable/pill_bg</item>
-        <item name="android:textColor">@drawable/pill_text</item>
+        <item name="android:textColor">@color/pill_text</item>
         <item name="android:textSize">15sp</item>
-        <item name="android:fontFamily">@font/outfit_medium</item>
-        <item name="android:letterSpacing">0.01</item>
         <item name="android:drawablePadding">9dp</item>
-        <item name="android:drawableTint">@drawable/pill_text</item>
         <item name="android:focusable">true</item>
         <item name="android:clickable">true</item>
     </style>

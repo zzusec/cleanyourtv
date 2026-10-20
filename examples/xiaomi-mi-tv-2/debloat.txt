@@ -1,0 +1,45 @@
+# Xiaomi Mi TV 2 (小米电视2, 2014-2015, China). Android 4.4.2 (API 19), MIUI TV, NOT Android TV.
+# 49" and 55" share the firmware; the model reports as MiTV2/MiTV2-49/MiTV2-55 depending on size.
+#
+# Apply:   TV_HOST=<tv ip> tools/disable.sh examples/xiaomi-mi-tv-2/debloat.txt
+# Undo:    TV_HOST=<tv ip> tools/restore.sh examples/xiaomi-mi-tv-2/debloat.txt
+# Everything is DISABLED, not uninstalled. Comment out any line you want to keep.
+#
+# Before you start: this firmware has no `cmd` binary. build-and-install.sh detects that and uses
+# `pm disable-user` + the HOME intent instead; tools/disable.sh and restore.sh already use `pm`.
+#
+# Stock launcher: com.mitv.tvhome (MIUI TV's PatchWall home). It has no "choose a launcher" screen,
+# so the switch is: install the new launcher, start it, then disable com.mitv.tvhome. Keep this list
+# handy: if Home lands nowhere, `pm enable com.mitv.tvhome` over ADB brings it back.
+# Live TV / inputs: com.mitv.tvinput and com.duokan.* on 49"; check `pm list packages | grep -i tvinput`
+# first and do NOT disable whatever the TV uses to play HDMI and the tuner.
+#
+# This list was assembled from the MIUI TV package set of that generation. Verify against your own
+# `pm list packages` before applying, and apply in small batches with a screenshot in between:
+# MIUI TV firmware differs between 49" and 55" and between the last two OTA builds.
+
+# MIUI TV telemetry and analytics
+com.miui.tv.analytics
+com.xiaomi.mitv.stats
+com.miui.tv.mitvpush
+
+# MIUI TV content, promos and the PatchWall recommendation engine
+com.mitv.patchwall
+com.mitv.tvhome.recommend
+com.mitv.tvstore
+com.mitv.mitvstore
+com.xiaomi.mitv.appstore
+
+# Xiaomi account and cloud plumbing the launcher does not need
+com.xiaomi.mitv.account
+com.xiaomi.mitv.cloud
+com.miui.tv.cloudservice
+
+# Demo and support apps
+com.mitv.demo
+com.mitv.manual
+
+# Optional: the MIUI TV voice assistant and the Xiao Ai speaker link. Uncomment only if you never use
+# the remote's voice button.
+# com.mitv.voiceassistant
+# com.xiaomi.aiasst.service

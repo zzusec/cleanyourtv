@@ -17,21 +17,20 @@ import android.view.accessibility.AccessibilityEvent;
  */
 public class HomeKeyService extends AccessibilityService {
 
-    /** Remote buttons that should open Settings (config.xml, settings_key_scancodes and settings_key_keycodes). */
-    private int[] settingsScancodes = new int[0];
-    private int[] settingsKeycodes = new int[0];
-
-    @Override
-    protected void onServiceConnected() {
-        super.onServiceConnected();
-        settingsScancodes = getResources().getIntArray(R.array.settings_key_scancodes);
-        settingsKeycodes = getResources().getIntArray(R.array.settings_key_keycodes);
-    }
+    /**
+     * Remote buttons that should open Settings, by Linux scancode and by Android keycode.
+     * These used to be res/values/config.xml integer arrays, which need API 21; the launcher runs on
+     * Android 4.4 (Xiaomi Mi TV 2) too, so they are constants now. Examples: the Xiaomi/Fengmi
+     * projector remote's gear button is scancode 384 (KEY_TAPE); TCL Google TV remotes send their
+     * Settings button as keycode 83 (KEYCODE_NOTIFICATION) on the shared scancode 240.
+     */
+    private static final int[] SETTINGS_SCANCODES = {};
+    private static final int[] SETTINGS_KEYCODES = {};
 
     private boolean isSettingsKey(KeyEvent event) {
         if (event.getKeyCode() == KeyEvent.KEYCODE_SETTINGS) return true;
-        for (int code : settingsScancodes) if (event.getScanCode() == code) return true;
-        for (int code : settingsKeycodes) if (event.getKeyCode() == code) return true;
+        for (int code : SETTINGS_SCANCODES) if (event.getScanCode() == code) return true;
+        for (int code : SETTINGS_KEYCODES) if (event.getKeyCode() == code) return true;
         return false;
     }
 

@@ -8,10 +8,14 @@ android {
 
     defaultConfig {
         applicationId 'com.gathin.tvhome'
-        minSdk 26
+        // 19 = Android 4.4 (Xiaomi Mi TV 2), 24 = Android 7 (Sony BRAVIA 2015). Every newer path stays
+        // behind a Build.VERSION check, so newer TVs keep the behaviour they had.
+        minSdk 19
         targetSdk 34
-        versionCode 4
-        versionName '2.3'
+        versionCode 5
+        versionName '2.4'
+        // Old TVs decode PNG resources; vector drawables are not supported before API 21.
+        vectorDrawables.useSupportLibrary = false
     }
 
     buildTypes {

@@ -30,7 +30,7 @@ final class VpnBadge extends ReplacementSpan {
         this.fill = lock != null ? GREEN : RED;
         this.ink = lock != null ? INK : INK_OFF;
         this.lock = lock != null ? lock.mutate() : null;
-        if (this.lock != null) this.lock.setTint(ink);
+        if (this.lock != null) Tint.set(this.lock, ink);
         this.density = density;
     }
 
@@ -69,7 +69,7 @@ final class VpnBadge extends ReplacementSpan {
 
         int oldColor = paint.getColor();
         paint.setColor(fill);
-        c.drawRoundRect(rect, h / 2f, h / 2f, paint);
+        RoundRect.draw(c, rect.left, rect.top, rect.right, rect.bottom, h / 2f, paint);
 
         int lx = (int) (left + 7 * density);
         if (lock != null) {

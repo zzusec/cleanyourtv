@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Examples</title><style>body{max-width:68rem;margin:2.5rem auto;padding:0 1.25rem;color:#202624;background:#fafbf8;font:17px/1.8 Georgia,"Songti SC",serif}h1,h2,h3{line-height:1.35}h2{margin-top:2rem}a{color:#175b58}code{font-family:Menlo,monospace;font-size:.85em;overflow-wrap:anywhere}pre{padding:1rem;background:#edf1eb;white-space:pre-wrap;overflow-wrap:anywhere;border-radius:6px}table{display:block;overflow:auto;border-collapse:collapse;max-width:100%}td,th{border:1px solid #bfc9c0;padding:.4rem .65rem;text-align:left}img{max-width:100%;height:auto}li{margin:.4rem 0}@media print{body{margin:0;max-width:none;background:white;font-size:10.5pt}h1,h2,h3{break-after:avoid}pre,tr{break-inside:avoid}table{display:table;font-size:9pt}a{color:inherit}}</style></head><body><main>
+<h1>Examples</h1>
+<p>One folder per TV model, each with a <code>debloat.txt</code> listing the packages that are safe to disable
+on that firmware, grouped and commented. These are starting points: comment out anything you use.</p>
+<table>
+<thead>
+<tr>
+<th>Folder</th>
+<th>TV</th>
+<th>OS</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>aipro2k/</code></td>
+<td>AiPro2K (Expressluck, dongnae; Changhong AI PONT family)</td>
+<td>Android TV 14</td>
+<td>Anoki ACR, Google ad services, retail demo and Wi-Fi Display test apps; 1 GB; setupwraith must go with launcherx (Home falls to its RecoveryActivity); CVTE/Expressluck factory packages and <code>com.epl.hotkey</code> kept</td>
+</tr>
+<tr>
+<td><code>amazon-fire-tv-stick-4k-2018/</code></td>
+<td>Amazon Fire TV Stick 4K, 1st gen 2018 (AFTMM, mantis)</td>
+<td>Fire OS 6.7.1.1 / Android 7.1</td>
+<td>First Fire OS 6 list: Amazon telemetry, ad/recommendation feeders, Live tab and Fire TV Channels, Shopping, Kids, Music/Photos/Silk, whole-home audio, Alexa extras; unused streaming apps off by choice; ten protected packages noted; voice search, OTA, casting kept; debloat only, sponsored rows need DNS blocking</td>
+</tr>
+<tr>
+<td><code>benq-e55-735/</code></td>
+<td>BenQ E55-735 (Changhong AI PONT, DVB96BQ)</td>
+<td>Google TV 14</td>
+<td>Homwee store/help, Anoki ACR, Google TV recommendations; wireless-debugging pairing, setupwraith, deep-standby notes</td>
+</tr>
+<tr>
+<td><code>chiq-gtvu65/</code></td>
+<td>CHiQ AI PONT (Changhong GTVU65, dangni, MediaTek mt5867)</td>
+<td>Google TV 14</td>
+<td>Google ad services and auto-installs, Homwee store/help; 1 GB; setupwraith must go (RecoveryActivity component cannot be disabled alone); MediaTek partnercustomizer safe to disable (reboot-checked)</td>
+</tr>
+<tr>
+<td><code>chiq-ai-pont/</code></td>
+<td>CHiQ AI PONT (DVB93CQ)</td>
+<td>Android TV 11</td>
+<td>Anoki ACR, FAST channels, AI PONT, Homwee services</td>
+</tr>
+<tr>
+<td><code>google-chromecast-gtv-4k/</code></td>
+<td>Chromecast with Google TV 4K (sabrina)</td>
+<td>Google TV 14</td>
+<td>Google telemetry and ad services, ambient mode, launcherx + setupwraith; wireless-debugging pairing, YouTube button remap</td>
+</tr>
+<tr>
+<td><code>hisense-hismarttv-a4/</code></td>
+<td>Hisense HiSmartTV A4 (xiaoyushan, MStar m7322), India</td>
+<td>Android TV 9</td>
+<td>Hisense log reporting, sponsored home rows, store demo, preload auto-installs, OTA; USB debugging opens port 5555, no wireless toggle; smartsense kept</td>
+</tr>
+<tr>
+<td><code>hisense-smarttv-4k-ffm/</code></td>
+<td>Hisense SmartTV 4K FFM (huangshan, MediaTek)</td>
+<td>Android TV 10</td>
+<td>ACR (evservice), VIDAA preload, store/hotel mode, OTA; smartsense must stay enabled</td>
+</tr>
+<tr>
+<td><code>hisense-u75-hengshan/</code></td>
+<td>Hisense U75 (hengshan, MediaTek), Latin America</td>
+<td>Google TV 12</td>
+<td>Vtp_ACR content recognition, VIDAA Channels Plus + content tab, Family Moment, store/hotel/factory, DeviceAssistant cleaner, Ginga broadcast middleware, Google PAI auto-installs; OTA, casting and all streaming apps kept by choice; smartsense/AIoT family must stay (Recovery risk)</td>
+</tr>
+<tr>
+<td><code>hitachi-65qledsm20/</code></td>
+<td>Hitachi 65QLEDSM20 (MTC, bangbae, MediaTek m7322), Australia</td>
+<td>Android TV 11</td>
+<td>Anoki ACR and FAST channels, JVC auto-installs; the "demo" package handles the Input key and remote pairing; 1.3 GB</td>
+</tr>
+<tr>
+<td><code>insignia-ns55f301na25/</code></td>
+<td>Insignia 55" F30 4K Fire TV (NS-55F301NA25, AFTDCT31, duckie)</td>
+<td>Fire OS 7 / Android 9</td>
+<td>Amazon ACR telemetry, Fire TV ads/shopping, Alexa, OTA updates; AirPlay and TIF HDMI inputs kept</td>
+</tr>
+<tr>
+<td><code>nvidia-shield-tv-pro-2019/</code></td>
+<td>NVIDIA SHIELD TV Pro 2019 (P2897, mdarcy)</td>
+<td>Android TV 11</td>
+<td>NVIDIA telemetry, GameStream leftovers, sponsored rows, partner auto-installs</td>
+</tr>
+<tr>
+<td><code>oneplus-tv-dubai/</code></td>
+<td>OnePlus TV (D00, Dubai)</td>
+<td>Google TV 14</td>
+<td>HeyTap/OnePlus extras, OnePlus Connect, Smart Home</td>
+</tr>
+<tr>
+<td><code>panasonic-4ktv-jup/</code></td>
+<td>Panasonic 4KTV-JUP (Jupiter_PA, MediaTek)</td>
+<td>Android TV 11</td>
+<td>Google recommendation rows and screensaver, Panasonic demo/hotel/help apps, calendar/print/backup leftovers; streaming apps off by choice; keep <code>com.mediatek.*</code></td>
+</tr>
+<tr>
+<td><code>philips-50pus8517/</code></td>
+<td>Philips 50PUS8517/12 (TP Vision, PH1M_EA_9970A, MediaTek MT5895), Europe</td>
+<td>Android TV 11</td>
+<td>First <code>org.droidtv</code> TP Vision list: DAC analytics uploader (AWS Firehose), Top Picks, app gallery; Assistant, DLNA, IP control off by choice; disabling <code>eum</code> or <code>aurora</code> leaves persistent <code>xtv</code> retrying forever, and <code>eum</code> also kills the sources drawer -- see quirk 5</td>
+</tr>
+<tr>
+<td><code>philips-55pus7503/</code></td>
+<td>Philips 55PUS7503/12 (TP Vision TPM171E, PH7M_EU_5596, MediaTek MT5891), Europe</td>
+<td>Android TV 8.0</td>
+<td>Conservative older-generation list: Philips demo, Top Picks and usage logging; Google recommendations/tutorials; voice, Chromecast, updates, Ambilight and all streaming apps kept</td>
+</tr>
+<tr>
+<td><code>philips-r8g-google-tv/</code></td>
+<td>Philips R8G Google TV (MOKA, whitefield, Realtek RTD2851F), US</td>
+<td>Google TV 14</td>
+<td>Anoki ACR, store-demo overlay, Realtek partner customizer, HbbTV (unused with ATSC), Android ad services; voice and ambient mode off by choice; port 5555 opens without pairing; setupwraith owned the Wi-Fi saved at setup and disabling it deleted the network</td>
+</tr>
+<tr>
+<td><code>philips-smart-4k-google-tv/</code></td>
+<td>Philips Smart 4K TV (Skyworth, eleonas, MediaTek), India</td>
+<td>Google TV 14</td>
+<td>Skyworth recommendations, after-sale/activation trackers, iCast; Chromecast, Assistant off by choice; wireless-debugging pairing, setupwraith</td>
+</tr>
+<tr>
+<td><code>prismplus-q65-ultra-r10g/</code></td>
+<td>PRISM+ Q65 Ultra 2026 QLED 4K AI Google TV (R10G, PRISMPLUS_FFM, MOKA, Realtek RTD2875 SoC, RTD6748 platform)</td>
+<td>Google TV 14</td>
+<td>Realtek partner customizer, Google partner setup and auto-installs, ambient mode, unused DTMB/ISDB/ATSC tuners, karaoke, preloaded apps; Max off by choice; keep com.realtek.dtv and com.realtek.tv.atv for inputs</td>
+</tr>
+<tr>
+<td><code>rca-ai-pont/</code></td>
+<td>RCA AI PONT SA (Changhong, redwood, ISDB92RC; also sold as realme 40-inch)</td>
+<td>Android 14</td>
+<td>Homwee store and installers, Anoki ACR, FAST channels; 1 GB</td>
+</tr>
+<tr>
+<td><code>redmi-mitv-antl0/</code></td>
+<td>Redmi TV (MiTV-ANTL0, starwars)</td>
+<td>Android 5.1.1 (not Android TV)</td>
+<td>Mi push/web-content/cloud-control ads, TV Taobao, stock screensaver, OTA; needs <code>pm hide</code> instead of <code>pm disable-user</code>, boot ad is a <code>setprop</code></td>
+</tr>
+<tr>
+<td><code>sanyo-atv-r2/</code></td>
+<td>SANYO ATV R2 (SCBC, Realtek RTD285O)</td>
+<td>Android TV 9</td>
+<td>S-Channels, E-SHOW demo, Vewd, TV Booster, SANYO OTA</td>
+</tr>
+<tr>
+<td><code>skyworth-swtv-21ae/</code></td>
+<td>Skyworth SWTV-21AE (sunnyvale, MediaTek)</td>
+<td>Android TV 14</td>
+<td>Skyworth home-row customizer, shop demo, e-manual; Google feedback; FAST channels, YouTube, ambient mode off by choice; port 5555 opens without pairing; 1 GB</td>
+</tr>
+<tr>
+<td><code>skyworth-swtv-24na-4k-nf/</code></td>
+<td>Skyworth SWTV-24NA-4K NF (eleonas, MediaTek mt5896), US</td>
+<td>Google TV 14</td>
+<td>Same platform as the India Philips Smart 4K: Skyworth recommendations, after-sale/activation trackers, partner customizer, Ginga/MHEG; casting, karaoke, OTA kept by choice; wireless-debugging pairing only; setupwraith owned the Wi-Fi saved at setup and disabling it deleted the network</td>
+</tr>
+<tr>
+<td><code>sony-bravia-ae2/</code></td>
+<td>Sony BRAVIA 4K AE2 (BRAVIA_AE2, MediaTek MT5897), North America</td>
+<td>Google TV 14</td>
+<td>Samba TV, Sony agents/promos/Select, demo mode, ATSC tuner unused outside NA; launcherx + setupwraith; wireless-debugging pairing, screensaver note</td>
+</tr>
+<tr>
+<td><code>sony-bravia-4k-2015/</code></td>
+<td>Sony BRAVIA 4K 2015 (SVP-DTV15, China)</td>
+<td>Android TV 7.0</td>
+<td>Launcher 2.4 installed and navigation/settings verified on device; direct default switch did not take effect, stock leanbacklauncher left enabled; debloat entries were not applied</td>
+</tr>
+<tr>
+<td><code>sony-bravia-4k-gb/</code></td>
+<td>Sony BRAVIA 4K GB (BRAVIA_ATV2_EU, BRAVIA_ATV2)</td>
+<td>Android TV 9</td>
+<td>Samba TV ACR, Sony Select/promos/Discover, demo mode, device agents; same firmware as the X900E; Chromecast, mirroring, DLNA and USB media kept on purpose</td>
+</tr>
+<tr>
+<td><code>sony-bravia-4k-ur2/</code></td>
+<td>Sony BRAVIA 4K UR2 (BRAVIA_UR2_4K, MediaTek)</td>
+<td>Android TV 10</td>
+<td>Samba TV, Sony promos/Select, demo mode; Assistant, Chromecast, unused streaming apps off by choice</td>
+</tr>
+<tr>
+<td><code>sony-bravia-4k-vh2/</code></td>
+<td>Sony BRAVIA 4K VH2 (KD-55X80J, BRAVIA_VH2, MediaTek), EU</td>
+<td>Google TV 12</td>
+<td>Samba TV ACR, Sony/Qterics device agents, demo mode, help tiles; setupwraith off for a custom launcher; Assistant, Chromecast, firmware updates kept</td>
+</tr>
+<tr>
+<td><code>sony-bravia-9-ii/</code></td>
+<td>Sony BRAVIA 9 II (K-65XR90M2, BRAVIA_AE3, MediaTek MT5838)</td>
+<td>Google TV 14</td>
+<td>Samba TV ACR, Sony/Qterics device agents, IDD, My BRAVIA promos, Sony Select and Sony tab, demo mode; setupwraith off for the launcher, but it owns Wi-Fi saved during setup and disabling it deletes that network; Chromecast off by choice</td>
+</tr>
+<tr>
+<td><code>sony-bravia-bf1/</code></td>
+<td>Sony BRAVIA BF1 (BRAVIA 2 II class, BRAVIA_BF1_4K_A, MediaTek)</td>
+<td>Google TV 12</td>
+<td>Samba TV, Sony promos/Select, demo mode, preloaded apps; Home switch in steps (setupwraith), ambient screensaver, applicationdisabler re-enables IoT</td>
+</tr>
+<tr>
+<td><code>sony-kd-55x85j/</code></td>
+<td>Sony BRAVIA KD-55X85J (2021, BRAVIA_VH2, MediaTek MT5895), South America</td>
+<td>Google TV 12</td>
+<td>Same build as the VH2 EU list; Samba TV ACR, Sony/Qterics agents, IDD, Sony promos/Select/tab, partner auto-installs, demo mode; Input key works without the service; setupwraith, launcherx and dreamx off after the launcher, ClockDream screensaver; reboot-checked</td>
+</tr>
+<tr>
+<td><code>sony-kd-65x80j/</code></td>
+<td>Sony BRAVIA KD-65X80J (2021, BRAVIA_VH2, MediaTek), India</td>
+<td>Google TV 10</td>
+<td>Samba TV, Sony device agents, Sony Select/tab, hotel-mode services, BRAVIA CAM leftovers; setupwraith off for a custom launcher; 4 GB /data fills up, trim caches before installing</td>
+</tr>
+<tr>
+<td><code>sony-xbr-x900e/</code></td>
+<td>Sony BRAVIA XBR-65X900E (2017, BRAVIA_ATV2)</td>
+<td>Android TV 9</td>
+<td>Samba TV ACR, Sony Select, My BRAVIA promos, Discover, device agents; Chromecast, DLNA, mirroring off by choice</td>
+</tr>
+<tr>
+<td><code>stellamore-t950s/</code></td>
+<td>Stellamore T950S projector (Droidlogic be30a3, Amlogic txhd2)</td>
+<td>Android 13</td>
+<td>Zeasn App Store and stock launcher both bundle Google Ads (doubleclick); Zeasn device portal/OTA, Stellamore factory/test/guide; 1 GB; keystone correction must stay enabled</td>
+</tr>
+<tr>
+<td><code>tcl-40s5400a/</code></td>
+<td>TCL 40S5400A (C06, C06_2K_GB, MediaTek MT9221, 1 GB)</td>
+<td>Android TV 11</td>
+<td>TCL account/TGuard/promo rows, USB players, voice and photo screensaver off by choice; ttvs is the firmware updater, keep it; stock launcher has HOME priority 2, so it must be disabled</td>
+</tr>
+<tr>
+<td><code>tcl-43c645/</code></td>
+<td>TCL 43C645 (Smart TV Pro, Realtek RTD2851 / R51MT05, V8-R51MT05-LF1V652)</td>
+<td>Google TV launcher on Android TV 11</td>
+<td>TCL BI analytics/promos, Google partner plumbing, setupwraith (takes HOME once the stock launcher is off); voice and Chromecast kept, firmware updater and Miracast off by choice; tested on a real unit, launcher works</td>
+</tr>
+<tr>
+<td><code>tcl-50ep680/</code></td>
+<td>TCL 50EP680 (Europe, BeyondTV, Realtek rtd285o)</td>
+<td>Android TV 11</td>
+<td>TCL analytics + content feed, giftbox dashboard, partner customizer, preloaded games/news; UK Freeview apps already off at the factory; voice off by choice; launcher works (stock <code>com.google.android.tvlauncher</code>, Live TV <code>com.tcl.tv</code>)</td>
+</tr>
+<tr>
+<td><code>tcl-g10-google-tv/</code></td>
+<td>TCL 55" 4K Google TV, 2023 (G10, G10_4K_US_NF); also TCL 55P6K, Spain (G10_4K_GB_NF_32BIT)</td>
+<td>Google TV 12</td>
+<td>TCL TV+, TCL Live, store demo, smartlink installer; setupwraith also claims Home once the stock launcher is disabled</td>
+</tr>
+<tr>
+<td><code>tcl-q10g-pro/</code></td>
+<td>TCL 55Q10G Pro (China, tcl_mt5879_cn, MediaTek MT9952)</td>
+<td>Android TV 11</td>
+<td>No Google services, TCL boot ad + analytics/BI, OTA and account services; ADB opens from Device info + UP/DOWN/LEFT/RIGHT, not the build number; debloat only, stock launcher cannot be replaced (signature check at install time)</td>
+</tr>
+<tr>
+<td><code>tcl-65c725/</code></td>
+<td>TCL 65C725 (Smart TV Pro, BeyondTV4)</td>
+<td>Android TV 11</td>
+<td>TCL analytics/promos, Google recommendation rows; voice off, OTA off by choice</td>
+</tr>
+<tr>
+<td><code>tcl-65c735/</code></td>
+<td>TCL 65C735 (Smart TV Pro, G05, MediaTek), France</td>
+<td>Google TV 11</td>
+<td>TCL analytics, TGuard, promo dashboard and content feed, unused preloads; voice and AirPlay off by choice, Chromecast and Miracast kept; launcherx + setupwraith off (survived reboot); remote app buttons need launcherx (keycodes noted); USB port goes to gadget mode after a reboot with USB debugging on</td>
+</tr>
+<tr>
+<td><code>tcl-ak30a5/</code></td>
+<td>TCL ak30a5 (China, Amlogic)</td>
+<td>Android TV 9</td>
+<td>No Google services, TCL boot ad + analytics, no TvInputManager, installs via USB only; debloat only, third-party launchers cannot be installed on this firmware</td>
+</tr>
+<tr>
+<td><code>tcl-beyondtv/</code></td>
+<td>TCL BeyondTV (India)</td>
+<td>Android TV 9</td>
+<td>TCL analytics, content feed, TCL app store, Google recommendation rows; Jio/Airtel/Hotstar apps untouched</td>
+</tr>
+<tr>
+<td><code>tcl-beyondtv-rt2851/</code></td>
+<td>TCL BeyondTV, EU/Nordic (Realtek RTD2851, V8-R851T02-LF1V606)</td>
+<td>Android TV 9</td>
+<td>TCL BI analytics, promo rows, cyberui, cleaner and store; mirroring, voice and firmware updater off by choice; Chromecast kept; installer note for appmarket2/tvweishi</td>
+</tr>
+<tr>
+<td><code>tcl-beyondtv2-latin-america/</code></td>
+<td>TCL BeyondTV2 (Latin America / Brazil, Realtek RTD2851)</td>
+<td>Android TV 9</td>
+<td>TCL analytics and boot content feed; <code>com.tcl.esticker</code> does not stay disabled on this firmware; UK Freeview apps already off at the factory</td>
+</tr>
+<tr>
+<td><code>tcl-qm6k-google-tv/</code></td>
+<td>TCL QM6K Pro, 2025 (G08, MediaTek tcl9618)</td>
+<td>Google TV 14</td>
+<td>Samba TV ACR (ttvs), TCL TV+, TCL Live, store/hotel demo; setupwraith must go for a custom launcher (also AU14, #23)</td>
+</tr>
+<tr>
+<td><code>tcl-g05-google-tv/</code></td>
+<td>TCL Smart TV Pro (G05, G05_4K_US, MediaTek MT5889)</td>
+<td>Google TV 11</td>
+<td>TCL Channel, waterfall, ttvs BI, TGuard; Quick Panel off by choice; setupwraith returned after a reboot, launcher half unverified</td>
+</tr>
+<tr>
+<td><code>tcl-uniontv-latin-america/</code></td>
+<td>TCL UnionTV, Latin America (TCL-built like Thomson 32HE5800, Realtek RT2841)</td>
+<td>Android TV 9</td>
+<td>TCL BI analytics, promo rows/partner customizer, app store, cleaner, user center; Ambient Mode, TTS, TalkBack and voice off; Chromecast and firmware updater kept; standby (STR) takes Ethernet down, no network wake</td>
+</tr>
+<tr>
+<td><code>thomson-32he5800/</code></td>
+<td>Thomson 32HE5800 (TCL-built UnionTV, Realtek RT2841), Spain</td>
+<td>Android TV 9</td>
+<td>TCL BI analytics, TCL app store/user center, TV Guard cleaner, Google recommendation rows; 1.4 GB low-RAM; voice, USB media players off by choice</td>
+</tr>
+<tr>
+<td><code>toshiba-fire-tv-aftha004/</code></td>
+<td>Toshiba Fire TV (AFTHA004, hazel)</td>
+<td>Fire OS 7 / Android 9</td>
+<td>Amazon ACR, metrics, shopping, tutorials, Miracast sink; streaming preloads off by choice; debloat only</td>
+</tr>
+<tr>
+<td><code>vu-4k-lushan/</code></td>
+<td>Vu 4K (HVCL, lushan, MediaTek), India</td>
+<td>Google TV 12</td>
+<td>Vu/Hisense ACR (evservice), store mode, Alexa, Vu preloads, partner auto-installs; smartsense/aiot kept, setupwraith off for the launcher</td>
+</tr>
+<tr>
+<td><code>xgimi-horizon-s-pro/</code></td>
+<td>XGIMI Horizon S Pro projector (XK03H, xgimigalileo, MediaTek)</td>
+<td>Android TV 11</td>
+<td>First projector: keystone/autofocus/HDMI player kept, factory and burn-in tools, bug-report uploader, Google preloads; HDMI needs <code>input_action</code>; voice, Chromecast off by choice</td>
+</tr>
+<tr>
+<td><code>xiaomi-mi-box-s/</code></td>
+<td>Xiaomi Mi Box S (MIBOX4, oneday), streaming box</td>
+<td>Android TV 9</td>
+<td>PatchWall, Mi analytics, Alphonso ad tracking, MiLink; voice, casting, phone remote off by choice</td>
+</tr>
+<tr>
+<td><code>xiaomi-mi-box-s-2nd-gen/</code></td>
+<td>Xiaomi Mi Box S 2nd gen (MiTV-AFKR0, jaws), streaming box</td>
+<td>Google TV 11</td>
+<td>Mi ad row and PatchWall, Mi analytics, partner auto-installs, update service off by choice; setup wizard off for the launcher, Wi-Fi password re-entry note</td>
+</tr>
+<tr>
+<td><code>xiaomi-mitv-mooq0/</code></td>
+<td>Xiaomi Mi TV (MiTV-MOOQ0, croods)</td>
+<td>Android TV 10</td>
+<td>PatchWall, Mi analytics, MiChannel, TV Manager, Alexa bridge; factory test app also claims HOME; notes from #81</td>
+</tr>
+<tr>
+<td><code>xiaomi-mi-tv-2/</code></td>
+<td>Xiaomi Mi TV 2 (2014-2015, China; unverified)</td>
+<td>Android 4.4.2 expected</td>
+<td>API 19 compatibility build; not installed or runtime-verified on this model; verify firmware and packages before applying this provisional list</td>
+</tr>
+<tr>
+<td><code>xiaomi-mi-tv-4a/</code></td>
+<td>Xiaomi Mi TV 4A (MiTV-MOOQ1)</td>
+<td>Android TV 10</td>
+<td>PatchWall, Mi analytics, SmartShare, MiLink</td>
+</tr>
+<tr>
+<td><code>xiaomi-mitv-aesp0/</code></td>
+<td>Xiaomi MiTV-AESP0 stick (aquaman, 1 GB)</td>
+<td>Android TV 9</td>
+<td>No inputs; Home key sends ALL_APPS, needs <code>HOME_KEY_SERVICE=1</code>; Chromecast kept</td>
+</tr>
+<tr>
+<td><code>xiaomi-mitv-astp1/</code></td>
+<td>Xiaomi MiTV-ASTP1 (maverick), China firmware 2.40.641.0514.cn, 1 GB RAM, 720p</td>
+<td>Android TV 9 (CN build)</td>
+<td>First CN-firmware Xiaomi: no Google apps; stock launcher <code>com.mitv.tvhome</code> (pass <code>STOCK_LAUNCHER</code>); ADB closes on every reboot; Mi analytics/push/ads, shop plugin, TV Manager, updater off; casting and app store kept</td>
+</tr>
+<tr>
+<td><code>xiaomi-mitv-axfr1/</code></td>
+<td>Xiaomi MiTV-AXFR1 (rango, Amlogic, 1 GB), India</td>
+<td>Android TV 11</td>
+<td>PatchWall, Mi analytics, sponsored rows, partner auto-installs, TV Manager; mirroring, OTA and unused streaming apps off by choice; Chromecast and voice kept; PatchWall's input popup is unused (input picker is Live TV's); custom HOME accepted, setupwraith does not claim HOME</td>
+</tr>
+<tr>
+<td><code>xiaomi-mitv-axso0/</code></td>
+<td>Xiaomi MiTV-AXSO0 (dangal; Mi TV 4C Pro 2019 / 4A Pro)</td>
+<td>Android TV 9</td>
+<td>PatchWall, Glance ads, Mi TV+, Sensara, Mi analytics, MiLink; voice, Chromecast, unused streaming apps off by choice</td>
+</tr>
+<tr>
+<td><code>xiaomi-mitv-moor2/</code></td>
+<td>Xiaomi MiTV-MOOR2 (venom, MediaTek)</td>
+<td>Google TV 11</td>
+<td>Mi ad row and PatchWall, Mi analytics, MiLink, store demo; setup wizard off so a third-party launcher can own Home</td>
+</tr>
+<tr>
+<td><code>xiaomi-mitv-mosr4/</code></td>
+<td>Xiaomi MiTV-MOSR4 (irobot, MediaTek)</td>
+<td>Google TV 11</td>
+<td>Mi ad rows and PatchWall, Mi analytics, TV Manager, Miracast sink, OTA off by choice; setup wizard off so a third-party launcher can own Home; <code>overseaservice</code> hosts the Netflix key and must stay</td>
+</tr>
+<tr>
+<td><code>xiaomi-mitv-mssp3/</code></td>
+<td>Xiaomi MiTV-MSSP3 (machuca, MediaTek)</td>
+<td>Android TV 11</td>
+<td>PatchWall, Mi analytics, Netflix observer; Chromecast, screensavers, unused streaming apps off by choice</td>
+</tr>
+<tr>
+<td><code>xiaomi-mitv-mssp3-android9/</code></td>
+<td>Xiaomi MiTV-MSSP3 (machuca, MediaTek), Android 9 firmware PI.7524</td>
+<td>Android TV 9</td>
+<td>Same model before its Android 11 update: PatchWall, Mi analytics, TV Manager, OTA; voice assistant re-enables itself at every boot (updated system app rescan); screensaver, preloaded apps off; 1.8 GB, swap full before</td>
+</tr>
+<tr>
+<td><code>xiaomi-tv-a-pro-2026/</code></td>
+<td>Xiaomi TV A Pro 75" 2026 (MiTV-MZTU0, river, MediaTek)</td>
+<td>Google TV 14</td>
+<td>PatchWall/Mi Home tab, Mi analytics, TV Manager, updaters; setup wizard off, launcherx crash-loop notes</td>
+</tr>
+<tr>
+<td><code>xiaomi-mitv-afmu0/</code></td>
+<td>Xiaomi TV Box S 3rd gen (MiTV-AFMU0, twilight, Amlogic), streaming box</td>
+<td>Google TV 14</td>
+<td>Mi analytics, PatchWall/Mi Home tab, Mi connect/SmartShare; voice and phone remote off by choice; setup wizard off so launcherx can go</td>
+</tr>
+</tbody>
+</table>
+<p>Notes for a model that has no tested list yet live in <a href="../docs/devices/"><code>docs/devices/</code></a> (Xiaomi MiTV-MFTR0 "freeguy", China, Android 14: inputs, Xiaomi settings intents, app discovery).</p>
+<p>To add your TV, see <a href="../CONTRIBUTING.md">CONTRIBUTING.md</a>. The quickest way to get a list is to
+run the prompt in <a href="../PROMPT.md">PROMPT.md</a> and copy the packages your assistant disabled.</p>
+</main></body></html>

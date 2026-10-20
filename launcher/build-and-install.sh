@@ -21,9 +21,28 @@ export MSYS_NO_PATHCONV=1
 # the setup wizard, or another third-party launcher, none of which should be disabled by accident.
 # Pass STOCK_LAUNCHER=<package> to name it yourself, or STOCK_LAUNCHER=none to disable nothing.
 KNOWN_STOCK_LAUNCHERS="com.google.android.tvlauncher com.google.android.apps.tv.launcherx com.google.android.leanbacklauncher com.mitv.tvhome"
+
+# Android 5 and older (the Xiaomi Mi TV 2 runs 4.4) have no `cmd` binary: resolve-activity,
+# query-activities, set-home-activity and compile are all missing there. Fall back to the old
+# commands: `dumpsys package preferred-activities` for the Home owner and `pm disable-user` for the
+# switch. The HOME query below is the one the rest of the script reads, so it is defined per version.
+HAS_CMD=$("$PY" -I ../tools/tv.py 'command -v cmd >/dev/null 2>&1 && echo yes || echo no' | tr -d '\r')
+if [ "$HAS_CMD" = yes ]; then
+  HOME_QUERY='cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME'
+  query_home_owner() {
+    "$PY" -I ../tools/tv.py "$HOME_QUERY" 2>/dev/null | tail -n 1 | tr -d '\r' | cut -d/ -f1 || true
+  }
+else
+  HOME_QUERY='dumpsys package preferred-activities'
+  # The preferred-activities dump lists the chosen HOME component as
+  #   mHomeComponent=ComponentInfo{com.mitv.tvhome/com.mitv.tvhome.MainActivity}
+  query_home_owner() {
+    "$PY" -I ../tools/tv.py "$HOME_QUERY" 2>/dev/null | tr -d '\r' \
+      | grep -o 'mHomeComponent=ComponentInfo{[A-Za-z0-9_.]*' | sed 's/.*{//' || true
+  }
+fi
 if [ -z "${STOCK_LAUNCHER:-}" ]; then
-  HOME_PKG=$("$PY" -I ../tools/tv.py 'cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME' \
-    | tail -n 1 | tr -d '\r' | cut -d/ -f1) || {
+  HOME_PKG=$(query_home_owner) || {
     echo "ERROR: could not ask the TV which launcher owns Home. Check TV_HOST and the debugging prompt on the TV," >&2
     echo "or pass STOCK_LAUNCHER=<package> yourself." >&2; exit 1; }
   case " $KNOWN_STOCK_LAUNCHERS " in
@@ -35,8 +54,14 @@ if [ -z "${STOCK_LAUNCHER:-}" ]; then
         # Android's chooser: two or more launchers tie and no default is set, which is where a TV lands
         # after tools/restore.sh followed by a re-applied list. Take the one known stock launcher among
         # the HOME claimants, if there is exactly one.
-        CLAIMANTS=$("$PY" -I ../tools/tv.py 'cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME' \
-          | tr -d '\r' | grep -o '[A-Za-z0-9_.]*/' | tr -d / | sort -u)
+        if [ "$HAS_CMD" = yes ]; then
+          CLAIMANTS=$("$PY" -I ../tools/tv.py 'cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME' \
+            | tr -d '\r' | grep -o '[A-Za-z0-9_.]*/' | tr -d / | sort -u)
+        else
+          # No `cmd` on Android 5 and older: ask the package dump which packages declare a HOME activity.
+          CLAIMANTS=$("$PY" -I ../tools/tv.py "dumpsys package | grep -B2 'android.intent.category.HOME' | grep -o 'Package \\[[A-Za-z0-9_.]*\\]' | sed 's/Package \\[//; s/\\]//'" \
+            | tr -d '\r' | sort -u)
+        fi
         FOUND=""; N=0
         for k in $KNOWN_STOCK_LAUNCHERS; do
           if printf '%s\n' "$CLAIMANTS" | grep -qx "$k"; then FOUND=$k; N=$((N + 1)); fi
@@ -57,7 +82,6 @@ if [ -z "${STOCK_LAUNCHER:-}" ]; then
   esac
 fi
 echo "Stock launcher: $STOCK_LAUNCHER"
-HOME_QUERY='cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME'
 if [ "$STOCK_LAUNCHER" = none ]; then DISABLE_STOCK="echo stock launcher left alone"
 else DISABLE_STOCK="pm disable-user --user 0 $STOCK_LAUNCHER"; fi
 APK=app/build/outputs/apk/release/app-release.apk
@@ -82,17 +106,33 @@ if ! printf '%s' "$START_OUT" | grep -qF 'Status: ok' || printf '%s' "$START_OUT
   echo "ERROR: the new launcher did not start (see above); $STOCK_LAUNCHER was left enabled." >&2
   exit 1
 fi
-printf '%s\n' \
-  "pm grant com.gathin.tvhome android.permission.ACCESS_FINE_LOCATION 2>/dev/null; echo location-granted" \
-  "cmd package compile -m speed -f com.gathin.tvhome" \
-  "$DISABLE_STOCK" \
-  "cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity" \
-  | "$PY" -I ../tools/tv.py --batch
+if [ "$HAS_CMD" = yes ]; then
+  printf '%s\n' \
+    "pm grant com.gathin.tvhome android.permission.ACCESS_FINE_LOCATION 2>/dev/null; echo location-granted" \
+    "cmd package compile -m speed -f com.gathin.tvhome" \
+    "$DISABLE_STOCK" \
+    "cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity" \
+    | "$PY" -I ../tools/tv.py --batch
+else
+  # Android 5 and older: no `cmd`, and no set-home-activity. The Home preference is written by
+  # starting the launcher's HOME intent and letting the system remember it; disabling the stock
+  # launcher afterwards leaves this one as the only claimant, which is what makes Home stick.
+  printf '%s\n' \
+    "$DISABLE_STOCK" \
+    "am start -a android.intent.action.MAIN -c android.intent.category.HOME -n com.gathin.tvhome/.MainActivity" \
+    | "$PY" -I ../tools/tv.py --batch
+fi
 
 # Home's owner, or an empty string when the TV cannot be reached (pipefail would otherwise make a
-# lost connection abort the script with no explanation).
+# lost connection abort the script with no explanation). On Android 5 and older the owner comes from
+# the preferred-activities dump, which prints a component, not a bare package.
 query_home() {
-  "$PY" -I ../tools/tv.py "$HOME_QUERY" 2>/dev/null | tail -n 1 | tr -d '\r' || true
+  if [ "$HAS_CMD" = yes ]; then
+    "$PY" -I ../tools/tv.py "$HOME_QUERY" 2>/dev/null | tail -n 1 | tr -d '\r' || true
+  else
+    "$PY" -I ../tools/tv.py "$HOME_QUERY" 2>/dev/null | tr -d '\r' \
+      | grep -o 'mHomeComponent=ComponentInfo{[A-Za-z0-9_.]*/[A-Za-z0-9_.$]*' | sed 's/.*{//' || true
+  fi
 }
 
 # Put the stock launcher back and check that it took. A TV whose new Home does not start can only be
@@ -105,7 +145,11 @@ rollback_home() {
   fi
   "$PY" -I ../tools/tv.py "pm enable --user 0 $STOCK_LAUNCHER" >/dev/null 2>&1 || true
   # set-home-activity needs pkg/activity on Android 9, so resolve the component on the TV first.
-  "$PY" -I ../tools/tv.py "cmd package set-home-activity --user 0 \$(cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME $STOCK_LAUNCHER | tail -n 1)" >/dev/null 2>&1 || true
+  if [ "$HAS_CMD" = yes ]; then
+    "$PY" -I ../tools/tv.py "cmd package set-home-activity --user 0 \$(cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME $STOCK_LAUNCHER | tail -n 1)" >/dev/null 2>&1 || true
+  else
+    "$PY" -I ../tools/tv.py "am start -a android.intent.action.MAIN -c android.intent.category.HOME" >/dev/null 2>&1 || true
+  fi
   BACK=$(query_home)
   case "$BACK" in
     "$STOCK_LAUNCHER"/*) echo "$STOCK_LAUNCHER owns Home again." >&2; return 0 ;;

@@ -48,6 +48,8 @@ state = load()
 
 
 def run(command):
+    if command.startswith("command -v cmd "):
+        return "yes\n"
     if "pm install" in command:
         return "Success\n"
     if "am start" in command:
