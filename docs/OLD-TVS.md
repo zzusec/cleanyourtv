@@ -50,11 +50,10 @@ the network settings entry and the main Sony settings entry were exercised succe
 The actual stock HOME component is `com.google.android.leanbacklauncher/.MainActivity`, not
 `com.google.android.tvlauncher`.
 
-Although this firmware advertises `cmd package set-home-activity`, requesting the new default
-still left HOME resolving to the stock launcher (priority 2). A successful shell command alone
-does not prove the default changed. The stock launcher was kept enabled, and no debloat list
-was applied. ADB became offline again during verification, so a forced handover was not attempted.
-The original launcher was verified in the foreground before that disconnect.
+The initial non-disabling attempt with `cmd package set-home-activity` still left HOME resolving
+to the stock launcher (priority 2). A successful shell command alone does not prove the default
+changed. ADB also became offline during that attempt; the stock launcher remained enabled until
+the later, explicitly authorized handover below.
 
 The device screenshots exposed clipped raster icons in that initial APK. The PNGs have since
 been re-rendered at each icon's original dp size, and the original vectors restored for API 21+.
@@ -63,9 +62,30 @@ After USB debugging was toggled on the TV, the corrected APK was installed succe
 15:24 on 2026-10-20. Its on-device APK SHA-256 was read back and matched the local build:
 `93d6f1d59293e1c24c94939cb94de5b82c7fc9c3a0cc92072d403d30ffb757a5`.
 The launcher was confirmed in the foreground, and a new device screenshot shows complete
-top-bar icons. The disabled-package list was unchanged and HOME still resolved to the stock
-launcher. The settings-entry checks above refer to the initial APK; the corrected APK's
-main Sony settings entry has not yet been reverified.
+top-bar icons. At that stage, the disabled-package list was unchanged and HOME still resolved
+to the stock launcher.
 
-This is not a completed default-launcher replacement or a reboot test. The Xiaomi Mi TV 2 and
-the Android 4.4 runtime remain unverified on physical hardware.
+### Authorized default-home handover
+
+After the user explicitly approved disabling the stock launcher with tested recovery, a
+TV-local detached watchdog was rehearsed with ADB disconnected. It re-enabled the stock
+package, restored its HOME preference, launched it and checked the actual foreground.
+A second rehearsal disabled the stock launcher, verified the new HOME and Sony settings,
+then disconnected ADB and successfully let the TV restore the disabled stock launcher.
+
+The final switch disabled only `com.google.android.leanbacklauncher` for user 0; its system
+APK and data remain intact. The new preferred HOME is `com.gathin.tvhome/.MainActivity`.
+The disabled-package list changed only by that stock package. The actual HOME key, a fresh
+launcher process, the new launcher's Settings pill, Home from settings, and a standby/wake
+cycle were verified. The stored preference has `mAlways=true`; the stock package has
+`installed=true` and `enabled=3` (disabled by the user).
+
+The final watchdog was disarmed only after those checks passed. It is temporary handover
+protection, not a permanent boot-time recovery service. No firmware, root access, system
+partition changes, uninstallation, or general debloat list was involved.
+
+A cold reboot/power-loss start was not tested: the temporary watchdog would not survive a
+reboot, and this TV's ADB can require local debugging to be toggled afterward. Recovery after
+confirmation still requires working ADB; there is no verified physical-remote rescue path.
+Do not uninstall the new launcher while the stock launcher is disabled. The Xiaomi Mi TV 2
+and Android 4.4 runtime remain unverified on physical hardware.

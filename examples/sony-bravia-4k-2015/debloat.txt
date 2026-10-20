@@ -12,7 +12,9 @@
 # Stock launcher (device-verified): com.google.android.leanbacklauncher/.MainActivity.
 # `set-home-activity` is advertised, but the observed HOME resolution still selected the stock
 # launcher (priority 2) after requesting the new launcher. Do not treat command success as proof,
-# and do not disable the stock launcher without a tested recovery path. It was left enabled.
+# and do not disable the stock launcher without a tested recovery path. A later authorized
+# handover disabled only that package after disconnected-ADB recovery rehearsals; Home, settings
+# and standby/wake passed. No cold reboot was tested, and this debloat list was not applied.
 # Live TV / inputs: com.sony.dtv.tvx (keep it, it also
 # plays every HDMI input). Keep com.sony.dtv.tvinput.*, braviasync* (HDMI-CEC), remotepairing,
 # sonysystemservice, settingsprovider and the com.mediatek.* entries.
